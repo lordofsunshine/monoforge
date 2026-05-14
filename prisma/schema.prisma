@@ -1,0 +1,504 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RepositoryVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum RepositoryStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum FileKind {
+  FILE
+  DIRECTORY
+}
+
+enum CompressionType {
+  NONE
+  ZSTD
+  IMAGE_WEBP
+  IMAGE_AVIF
+  PASSTHROUGH
+}
+
+enum StorageBackend {
+  LOCAL
+  S3
+}
+
+enum FileVariantKind {
+  IMAGE_PREVIEW
+  IMAGE_THUMBNAIL
+}
+
+enum IssueStatus {
+  OPEN
+  CLOSED
+}
+
+enum IssuePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum IssueBoardStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum ActivityType {
+  REPOSITORY_CREATED
+  REPOSITORY_RENAMED
+  REPOSITORY_VISIBILITY_CHANGED
+  FILE_UPLOADED
+  FILE_UPDATED
+  FILE_DELETED
+  ISSUE_OPENED
+  ISSUE_CLOSED
+  ISSUE_COMMENTED
+  STAR_ADDED
+  STAR_REMOVED
+  COMMIT_LITE_CREATED
+}
+
+enum ApiTokenStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum AuditAction {
+  DELETE_REPOSITORY
+  CHANGE_REPOSITORY_VISIBILITY
+  RENAME_REPOSITORY
+  UPLOAD_LARGE_FILE
+  FAILED_LOGIN
+  DELETE_FILE
+  QUOTA_EXCEEDED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  username      String    @unique
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  bio           String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastActiveAt  DateTime?
+
+  accounts             Account[]
+  sessions             Session[]
+  repositories         Repository[]
+  issues               Issue[]
+  issueComments        IssueComment[]
+  stars                Star[]
+  commits              CommitLite[]
+  activity             RepoActivity[]
+  storageQuota         StorageQuota?
+  apiTokens            ApiToken[]
+  issueMaintainerNotes IssueMaintainerNote[]
+  auditLogs            AuditLog[]
+
+  @@index([createdAt])
+  @@index([lastActiveAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@index([expires])
+}
+
+model Repository {
+  id            String               @id @default(cuid())
+  ownerId       String
+  name          String
+  slug          String
+  description   String?
+  visibility    RepositoryVisibility @default(PUBLIC)
+  status        RepositoryStatus     @default(ACTIVE)
+  defaultBranch String               @default("main")
+  gitEnabled    Boolean              @default(false)
+  gitPath       String?
+  readmePath    String?
+  repoSize      BigInt               @default(0)
+  fileCount     Int                  @default(0)
+  issueCount    Int                  @default(0)
+  starCount     Int                  @default(0)
+  lastPushedAt  DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  owner    User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  files    RepositoryFile[]
+  issues   Issue[]
+  labels   IssueLabel[]
+  stars    Star[]
+  commits  CommitLite[]
+  activity RepoActivity[]
+  views    RepoView[]
+
+  @@unique([ownerId, name])
+  @@unique([ownerId, slug])
+  @@index([ownerId])
+  @@index([name])
+  @@index([slug])
+  @@index([visibility, status, updatedAt])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([starCount])
+  @@index([gitEnabled])
+}
+
+model RepositoryFile {
+  id           String   @id @default(cuid())
+  repositoryId String
+  blobId       String?
+  path         String
+  parentPath   String?
+  name         String
+  extension    String?
+  kind         FileKind @default(FILE)
+  size         BigInt   @default(0)
+  mimeType     String?
+  hash         String?
+  language     String?
+  isBinary     Boolean  @default(false)
+  isReadme     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  blob       FileBlob?  @relation(fields: [blobId], references: [id], onDelete: SetNull)
+
+  @@unique([repositoryId, path])
+  @@index([repositoryId])
+  @@index([repositoryId, parentPath])
+  @@index([repositoryId, name])
+  @@index([repositoryId, kind, path])
+  @@index([path])
+  @@index([hash])
+  @@index([blobId])
+  @@index([createdAt])
+}
+
+model FileBlob {
+  id              String          @id @default(cuid())
+  checksum        String          @unique
+  originalSize    BigInt
+  compressedSize  BigInt?
+  compressionType CompressionType @default(NONE)
+  storageBackend  StorageBackend  @default(LOCAL)
+  storageKey      String
+  mimeType        String?
+  refCount        Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  files    RepositoryFile[]
+  variants FileVariant[]
+
+  @@index([checksum])
+  @@index([storageKey])
+  @@index([createdAt])
+  @@index([compressionType])
+}
+
+model FileVariant {
+  id             String          @id @default(cuid())
+  blobId         String
+  kind           FileVariantKind
+  storageBackend StorageBackend  @default(LOCAL)
+  storageKey     String
+  mimeType       String
+  byteSize       BigInt
+  width          Int?
+  height         Int?
+  createdAt      DateTime        @default(now())
+
+  blob FileBlob @relation(fields: [blobId], references: [id], onDelete: Cascade)
+
+  @@unique([blobId, kind])
+  @@index([blobId])
+  @@index([kind])
+}
+
+model Issue {
+  id           String           @id @default(cuid())
+  repositoryId String
+  authorId     String
+  number       Int
+  title        String
+  body         String?          @db.Text
+  digest       String?
+  status       IssueStatus      @default(OPEN)
+  priority     IssuePriority    @default(NORMAL)
+  boardStatus  IssueBoardStatus @default(TODO)
+  sourcePath   String?
+  sourceLine   Int?
+  commentCount Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  closedAt     DateTime?
+
+  repository     Repository           @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  author         User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments       IssueComment[]
+  labels         IssueLabelLink[]
+  maintainerNote IssueMaintainerNote?
+
+  @@unique([repositoryId, number])
+  @@index([repositoryId])
+  @@index([repositoryId, status, updatedAt])
+  @@index([repositoryId, boardStatus])
+  @@index([repositoryId, title])
+  @@index([authorId])
+  @@index([title])
+  @@index([createdAt])
+}
+
+model IssueComment {
+  id        String   @id @default(cuid())
+  issueId   String
+  authorId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model IssueLabel {
+  id           String   @id @default(cuid())
+  repositoryId String
+  name         String
+  slug         String
+  marker       String
+  pattern      String   @default("solid")
+  createdAt    DateTime @default(now())
+
+  repository Repository       @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  issues     IssueLabelLink[]
+
+  @@unique([repositoryId, slug])
+  @@index([repositoryId])
+  @@index([slug])
+}
+
+model IssueLabelLink {
+  issueId String
+  labelId String
+
+  issue Issue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  label IssueLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([issueId, labelId])
+  @@index([labelId])
+}
+
+model IssueMaintainerNote {
+  id        String   @id @default(cuid())
+  issueId   String   @unique
+  authorId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+}
+
+model Star {
+  id           String   @id @default(cuid())
+  userId       String
+  repositoryId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, repositoryId])
+  @@index([userId])
+  @@index([repositoryId])
+  @@index([createdAt])
+}
+
+model CommitLite {
+  id           String   @id @default(cuid())
+  repositoryId String
+  authorId     String
+  message      String
+  changedFiles String[] @default([])
+  checksum     String?
+  filesAdded   Int      @default(0)
+  filesChanged Int      @default(0)
+  filesDeleted Int      @default(0)
+  bytesAdded   BigInt   @default(0)
+  bytesDeleted BigInt   @default(0)
+  createdAt    DateTime @default(now())
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([authorId])
+  @@index([checksum])
+  @@index([createdAt])
+}
+
+model RepoActivity {
+  id           String       @id @default(cuid())
+  repositoryId String
+  actorId      String?
+  type         ActivityType
+  title        String
+  targetPath   String?
+  issueNumber  Int?
+  commitLiteId String?
+  createdAt    DateTime     @default(now())
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  actor      User?      @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([repositoryId])
+  @@index([repositoryId, createdAt])
+  @@index([actorId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model RepoView {
+  id           String   @id @default(cuid())
+  repositoryId String
+  viewerHash   String
+  viewerUserId String?
+  month        DateTime
+  viewCount    Int      @default(1)
+  createdAt    DateTime @default(now())
+  lastViewedAt DateTime @updatedAt
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, viewerHash, month])
+  @@index([repositoryId])
+  @@index([repositoryId, month])
+  @@index([viewerHash])
+  @@index([createdAt])
+}
+
+model StorageQuota {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  maxStorageBytes  BigInt   @default(104857600)
+  usedBytes        BigInt   @default(0)
+  maxRepoBytes     BigInt   @default(209715200)
+  maxFileBytes     BigInt   @default(10485760)
+  maxRepos         Int      @default(20)
+  maxFilesPerRepo  Int      @default(1000)
+  maxIssuesPerRepo Int      @default(1000)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ApiToken {
+  id         String         @id @default(cuid())
+  userId     String
+  name       String
+  tokenHash  String         @unique
+  prefix     String
+  scopes     String[]       @default([])
+  status     ApiTokenStatus @default(ACTIVE)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime       @default(now())
+  revokedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([prefix])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id           String      @id @default(cuid())
+  actorId      String?
+  action       AuditAction
+  repositoryId String?
+  target       String?
+  ip           String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([repositoryId])
+  @@index([action])
+  @@index([createdAt])
+}
