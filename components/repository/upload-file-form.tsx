@@ -18,6 +18,10 @@ type UploadStatus = {
   done: number;
   total: number;
   message: string;
+  rejected?: Array<{
+    path: string;
+    reason: string;
+  }>;
 };
 
 type FileSystemEntryLike = {
@@ -155,24 +159,31 @@ export function UploadFileForm({ owner, repo }: UploadFileFormProps) {
     startTransition(async () => {
       const message = commitMessage.trim() || t("upload.defaultMessage");
       setStatus({ done: 0, total: items.length, message: t("upload.uploading") });
+      const rejected: UploadStatus["rejected"] = [];
+      let uploaded = 0;
 
       for (let index = 0; index < items.length; index += 1) {
         try {
           await uploadOne(items[index], message);
-          setStatus({ done: index + 1, total: items.length, message: `${t("upload.uploaded")} ${index + 1} ${t("upload.of")} ${items.length}` });
+          uploaded += 1;
+          setStatus({ done: index + 1, total: items.length, message: `${t("upload.uploaded")} ${uploaded} ${t("upload.of")} ${items.length}`, rejected });
         } catch (error) {
-          setStatus({
-            done: index,
-            total: items.length,
-            message: error instanceof Error ? error.message : t("upload.failed"),
+          rejected.push({
+            path: items[index].path,
+            reason: error instanceof Error ? error.message : t("upload.failed"),
           });
-          return;
+          setStatus({ done: index + 1, total: items.length, message: `${t("upload.uploaded")} ${uploaded} ${t("upload.of")} ${items.length}`, rejected });
         }
       }
 
       setItems([]);
       setCommitMessage("");
-      setStatus({ done: items.length, total: items.length, message: t("upload.complete") });
+      setStatus({
+        done: items.length,
+        total: items.length,
+        message: rejected.length ? `${t("upload.completeWithSkipped")} ${rejected.length}` : t("upload.complete"),
+        rejected,
+      });
       router.refresh();
     });
   }
@@ -234,6 +245,21 @@ export function UploadFileForm({ owner, repo }: UploadFileFormProps) {
           {status.total ? (
             <div className="mt-2 h-1.5 overflow-hidden rounded-sm bg-muted">
               <div className="h-full bg-foreground" style={{ width: `${Math.round((status.done / status.total) * 100)}%` }} />
+            </div>
+          ) : null}
+          {status.rejected?.length ? (
+            <div className="mt-3 grid gap-1 border-t border-line pt-3">
+              <p className="font-mono text-xs uppercase tracking-[0.12em] text-secondary">{t("upload.skippedFiles")}</p>
+              {status.rejected.slice(0, 8).map((item) => (
+                <p className="break-words font-mono text-xs text-faint" key={`${item.path}-${item.reason}`}>
+                  {item.path}: {item.reason}
+                </p>
+              ))}
+              {status.rejected.length > 8 ? (
+                <p className="font-mono text-xs text-faint">
+                  +{status.rejected.length - 8} {t("upload.more")}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>
