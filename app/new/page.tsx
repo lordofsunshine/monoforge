@@ -6,7 +6,7 @@ export default async function NewRepositoryPage() {
   await requireUser();
 
   return (
-    <section className="mx-auto grid max-w-2xl gap-6">
+    <section className="grid w-full max-w-2xl gap-6">
       <div className="border-b border-line pb-5">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
           <LocalizedText path="repoForm.eyebrow" />

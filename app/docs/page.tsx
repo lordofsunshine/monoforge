@@ -12,7 +12,7 @@ const sections = [
 
 export default function DocsPage() {
   return (
-    <section className="mx-auto grid max-w-4xl gap-8">
+    <section className="grid w-full max-w-4xl gap-8">
       <header className="border-b border-line pb-8">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
           <LocalizedText path="docs.eyebrow" />
