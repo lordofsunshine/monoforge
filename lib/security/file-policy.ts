@@ -1,14 +1,16 @@
 import path from "node:path";
 
-export const forbiddenExtensions = new Set([".exe", ".dll", ".bat", ".cmd", ".msi", ".scr", ".com", ".jar", ".sh"]);
+export const forbiddenSecretFileNames = new Set([".env", ".env.local", ".env.production", ".env.development", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"]);
+export const forbiddenSecretExtensions = new Set([".pem", ".key", ".p12", ".pfx"]);
 const activeContentExtensions = new Set([".html", ".htm", ".svg", ".xhtml", ".xml"]);
 const activeContentMimeTypes = new Set(["text/html", "image/svg+xml", "application/xhtml+xml"]);
 
 export function assertSafeFileExtension(repoPath: string) {
   const extension = path.posix.extname(repoPath).toLowerCase();
+  const fileName = path.posix.basename(repoPath).toLowerCase();
 
-  if (forbiddenExtensions.has(extension)) {
-    throw new Error(`Files with ${extension} extension are not allowed`);
+  if (forbiddenSecretFileNames.has(fileName) || forbiddenSecretExtensions.has(extension)) {
+    throw new Error("This file looks like a secret or private key and was not uploaded");
   }
 }
 

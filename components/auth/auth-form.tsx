@@ -7,6 +7,8 @@ import { useI18n } from "@/components/system/preferences-provider";
 type AuthFormProps = {
   mode: "login" | "register";
   action: (state: FormState, formData: FormData) => Promise<FormState>;
+  googleEnabled?: boolean;
+  googleAction?: () => Promise<void>;
 };
 
 const initialState: FormState = {
@@ -14,13 +16,28 @@ const initialState: FormState = {
   message: "",
 };
 
-export function AuthForm({ mode, action }: AuthFormProps) {
+export function AuthForm({ mode, action, googleEnabled = false, googleAction }: AuthFormProps) {
   const { t } = useI18n();
   const [state, formAction, pending] = useActionState(action, initialState);
   const isRegister = mode === "register";
 
   return (
-    <form action={formAction} className="grid gap-4">
+    <div className="grid gap-4">
+      {googleEnabled && googleAction ? (
+        <>
+          <form action={googleAction}>
+            <button className="inline-flex h-10 w-full items-center justify-center rounded-md border border-line bg-surface px-4 text-sm font-medium hover:border-lineStrong hover:bg-subtle" type="submit">
+              {t("auth.continueWithGoogle")}
+            </button>
+          </form>
+          <div className="flex items-center gap-3 text-xs text-faint">
+            <span className="h-px flex-1 bg-line" />
+            <span>{t("auth.or")}</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </>
+      ) : null}
+      <form action={formAction} className="grid gap-4">
       <div className="grid gap-2">
         <label className="font-mono text-xs uppercase tracking-[0.12em] text-secondary" htmlFor="email">
           {t("auth.email")}
@@ -78,6 +95,7 @@ export function AuthForm({ mode, action }: AuthFormProps) {
       >
         {pending ? t("auth.working") : isRegister ? t("auth.createAccount") : t("auth.login")}
       </button>
-    </form>
+      </form>
+    </div>
   );
 }

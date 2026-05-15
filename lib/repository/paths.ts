@@ -1,6 +1,17 @@
 import path from "node:path";
 
-export const blockedExtensions = new Set([".exe", ".dll", ".bat", ".cmd", ".msi", ".scr", ".com", ".jar", ".sh"]);
+export const blockedSecretFileNames = new Set([
+  ".env",
+  ".env.local",
+  ".env.production",
+  ".env.development",
+  "id_rsa",
+  "id_dsa",
+  "id_ecdsa",
+  "id_ed25519",
+]);
+
+export const blockedSecretExtensions = new Set([".pem", ".key", ".p12", ".pfx"]);
 
 export function normalizeRepoPath(input: string) {
   const decoded = decodeURIComponent(input);
@@ -52,9 +63,10 @@ export function getRepoExtension(repoPath: string) {
 
 export function assertAllowedExtension(repoPath: string) {
   const extension = path.posix.extname(repoPath).toLowerCase();
+  const fileName = path.posix.basename(repoPath).toLowerCase();
 
-  if (blockedExtensions.has(extension)) {
-    throw new Error(`Files with ${extension} extension are not allowed`);
+  if (blockedSecretFileNames.has(fileName) || blockedSecretExtensions.has(extension)) {
+    throw new Error("This file looks like a secret or private key and was not uploaded");
   }
 }
 

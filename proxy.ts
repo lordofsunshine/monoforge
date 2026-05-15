@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isSameOriginRequest } from "@/lib/security/origin";
+import { hasApiCredential, isSameOriginRequest } from "@/lib/security/origin";
 
 function withSecurityHeaders(response: NextResponse) {
   const scriptSrc = process.env.NODE_ENV === "development" ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'";
@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/") && !isSameOriginRequest(request)) {
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/") && !isSameOriginRequest(request) && !hasApiCredential(request)) {
     return withSecurityHeaders(NextResponse.json({ error: "Cross-origin request blocked" }, { status: 403 }));
   }
 

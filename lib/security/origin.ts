@@ -20,3 +20,8 @@ export function isSameOriginRequest(request: Request) {
     return false;
   }
 }
+
+export function hasApiCredential(request: Request) {
+  const authorization = request.headers.get("authorization");
+  return Boolean(authorization?.toLowerCase().startsWith("bearer ") || request.headers.get("x-api-key"));
+}

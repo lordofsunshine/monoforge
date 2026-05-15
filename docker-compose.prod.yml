@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: monoforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-monoforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-monoforge}
+    volumes:
+      - monoforge_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-monoforge} -d ${POSTGRES_DB:-monoforge}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+
+  migrate:
+    image: node:24-bookworm-slim
+    profiles: ["tools"]
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monoforge}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monoforge}?schema=public
+    volumes:
+      - .:/app
+      - monoforge_migrate_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -lc "npm ci && npx prisma generate && npx prisma migrate deploy"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monoforge-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monoforge}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monoforge}?schema=public
+      STORAGE_PATH: /app/storage
+      AUTH_URL: https://monoforge.org
+      AUTH_TRUST_HOST: "true"
+      NEXTAUTH_URL: https://monoforge.org
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "127.0.0.1:${APP_PORT:-3102}:3000"
+    volumes:
+      - /root/monoforge/storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    mem_limit: 768m
+
+volumes:
+  monoforge_postgres_data:
+  monoforge_migrate_node_modules:

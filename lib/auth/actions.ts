@@ -76,6 +76,7 @@ export async function registerAction(_state: FormState, formData: FormData): Pro
 }
 
 export async function loginAction(_state: FormState, formData: FormData): Promise<FormState> {
+  const ip = await getRequestIp();
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -83,6 +84,12 @@ export async function loginAction(_state: FormState, formData: FormData): Promis
 
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message || "Check the form and try again." };
+  }
+
+  const limited = checkRateLimit(`login-ui:${ip}:${parsed.data.email}`, 5, 60_000);
+
+  if (!limited.allowed) {
+    return { ok: false, message: "Too many login attempts. Try again soon." };
   }
 
   try {
@@ -104,6 +111,10 @@ export async function loginAction(_state: FormState, formData: FormData): Promis
 
 export async function logoutAction() {
   await signOut({ redirectTo: "/" });
+}
+
+export async function googleSignInAction() {
+  await signIn("google", { redirectTo: "/dashboard" });
 }
 
 export async function updateProfileAction(_state: FormState, formData: FormData): Promise<FormState> {

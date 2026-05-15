@@ -111,6 +111,8 @@ export const dictionaries = {
       password: "Password",
       createAccount: "Create account",
       login: "Login",
+      continueWithGoogle: "Continue with Google",
+      or: "or",
       working: "Working...",
     },
     dashboard: {
@@ -148,6 +150,8 @@ export const dictionaries = {
       saveSettings: "Save settings",
       deleteRepository: "Delete repository",
       deleteText: "Deleting removes the repository page and file records. Stored blobs can be cleaned up later by maintenance.",
+      deleteWarningTitle: "Permanent action",
+      deleteWarningText: "After deletion, repository data cannot be restored from the site. Download a ZIP backup before continuing if you may need these files later.",
     },
     command: {
       open: "Open command palette",
@@ -204,6 +208,8 @@ export const dictionaries = {
       uploaded: "Uploaded",
       of: "of",
       complete: "Upload complete.",
+      completeWithSkipped: "Upload complete. Skipped files:",
+      skippedFiles: "Skipped files",
       uploadSelected: "Upload selected",
       defaultMessage: "Upload files",
       failed: "Upload failed.",
@@ -430,6 +436,8 @@ export const dictionaries = {
       password: "Пароль",
       createAccount: "Создать аккаунт",
       login: "Войти",
+      continueWithGoogle: "Продолжить через Google",
+      or: "или",
       working: "Выполняется...",
     },
     dashboard: {
@@ -467,6 +475,8 @@ export const dictionaries = {
       saveSettings: "Сохранить настройки",
       deleteRepository: "Удалить репозиторий",
       deleteText: "Удаление убирает страницу репозитория и записи о файлах. Хранилище можно очистить позже через обслуживание.",
+      deleteWarningTitle: "Необратимое действие",
+      deleteWarningText: "После удаления данные репозитория нельзя будет вернуть через сайт. Если файлы могут понадобиться позже, сначала скачайте ZIP-копию.",
     },
     command: {
       open: "Открыть палитру команд",
@@ -523,6 +533,8 @@ export const dictionaries = {
       uploaded: "Загружено",
       of: "из",
       complete: "Загрузка завершена.",
+      completeWithSkipped: "Загрузка завершена. Пропущено файлов:",
+      skippedFiles: "Пропущенные файлы",
       uploadSelected: "Загрузить выбранное",
       defaultMessage: "Загрузка файлов",
       failed: "Не удалось загрузить.",

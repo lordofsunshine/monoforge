@@ -8,14 +8,16 @@ describe("repository utilities", () => {
     expect(getDirectoryPaths("src/app/page.tsx")).toEqual(["src", "src/app"]);
   });
 
-  it("rejects unsafe paths and blocked extensions", () => {
+  it("rejects unsafe paths and secret-like files", () => {
     expect(() => normalizeRepoPath("../secret.txt")).toThrow();
     expect(() => normalizeRepoPath("..%2fsecret.txt")).toThrow();
     expect(() => normalizeRepoPath("/etc/passwd")).toThrow();
     expect(() => normalizeRepoPath("storage/blobs/x")).toThrow();
-    expect(() => assertAllowedExtension("setup.exe")).toThrow();
-    expect(() => assertAllowedExtension("run.sh")).toThrow();
-    expect(() => assertAllowedExtension("plugin.jar")).toThrow();
+    expect(() => assertAllowedExtension("setup.exe")).not.toThrow();
+    expect(() => assertAllowedExtension("run.sh")).not.toThrow();
+    expect(() => assertAllowedExtension("plugin.jar")).not.toThrow();
+    expect(() => assertAllowedExtension(".env")).toThrow();
+    expect(() => assertAllowedExtension("keys/private.pem")).toThrow();
   });
 
   it("creates deterministic fingerprints", () => {

@@ -3,6 +3,8 @@ import { z } from "zod";
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(16),
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
   STORAGE_PATH: z.string().default("./storage"),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().int().positive().default(10),
   MAX_REPO_SIZE_MB: z.coerce.number().int().positive().default(200),
