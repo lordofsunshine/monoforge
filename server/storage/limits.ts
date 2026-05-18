@@ -41,7 +41,12 @@ export async function enforceQuota(userId: string, incomingFileSize: number) {
   }
 
   const used = await getUserStorageUsage(userId);
-  const maxUserBytes = BigInt(env.MAX_USER_STORAGE_MB) * 1024n * 1024n;
+  const prisma = getPrisma();
+  const quota = await prisma.storageQuota.findUnique({
+    where: { userId },
+    select: { maxStorageBytes: true },
+  });
+  const maxUserBytes = quota?.maxStorageBytes ?? BigInt(env.MAX_USER_STORAGE_MB) * 1024n * 1024n;
 
   if (used + BigInt(incomingFileSize) > maxUserBytes) {
     await writeAuditLog({

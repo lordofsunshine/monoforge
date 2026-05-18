@@ -11,6 +11,32 @@ export const maxMvpRepoSize = 200 * 1024 * 1024;
 export const maxMvpFilesPerRepo = 1000;
 export const textPreviewLimit = 1024 * 1024;
 
+export type TempUploadItem = {
+  path: string;
+  tmpPath: string;
+  originalName: string;
+  byteSize: number;
+};
+
+export type UploadBatchResult = {
+  uploaded: Array<{
+    path: string;
+    status: "created" | "updated";
+  }>;
+  rejected: Array<{
+    path: string;
+    reason: string;
+  }>;
+};
+
+export function getUploadBatchActivityTitle(changedFiles: string[], filesChanged: number) {
+  if (changedFiles.length === 1) {
+    return `File ${filesChanged ? "updated" : "uploaded"}: ${changedFiles[0]}`;
+  }
+
+  return `Uploaded ${changedFiles.length} files`;
+}
+
 const textExtensions = new Set([
   "txt",
   "md",
@@ -376,6 +402,274 @@ export async function upsertRepositoryFileFromTemp(input: {
   });
 
   return repoPath;
+}
+
+export async function uploadRepositoryFilesBatch(input: {
+  repositoryId: string;
+  authorId: string;
+  files: TempUploadItem[];
+  message?: string;
+}): Promise<UploadBatchResult> {
+  const prisma = getPrisma();
+  const repository = await ensureRepoWritable(input.repositoryId, input.authorId);
+  const rejected: UploadBatchResult["rejected"] = [];
+  const candidates: Array<TempUploadItem & { repoPath: string; extension: string | null }> = [];
+  const seenPaths = new Set<string>();
+
+  for (const file of input.files) {
+    try {
+      const repoPath = normalizeRepoPath(file.path);
+      assertAllowedExtension(repoPath);
+
+      if (seenPaths.has(repoPath.toLowerCase())) {
+        throw new Error("Duplicate path in this upload");
+      }
+
+      if (file.byteSize > maxMvpFileSize) {
+        throw new Error("File is over 10 MB");
+      }
+
+      seenPaths.add(repoPath.toLowerCase());
+      candidates.push({
+        ...file,
+        repoPath,
+        extension: getRepoExtension(repoPath),
+      });
+    } catch (error) {
+      rejected.push({
+        path: file.path,
+        reason: error instanceof Error ? error.message : "File was rejected",
+      });
+    }
+  }
+
+  if (!candidates.length) {
+    return { uploaded: [], rejected };
+  }
+
+  const previousFiles = await prisma.repositoryFile.findMany({
+    where: {
+      repositoryId: input.repositoryId,
+      path: { in: candidates.map((file) => file.repoPath) },
+    },
+    select: {
+      id: true,
+      blobId: true,
+      hash: true,
+      path: true,
+      size: true,
+      kind: true,
+    },
+  });
+  const previousByPath = new Map(previousFiles.map((file) => [file.path, file]));
+  let nextRepoSize = BigInt(repository.repoSize);
+  let nextFileCount = repository.fileCount;
+  const acceptedForStorage: typeof candidates = [];
+
+  for (const file of candidates) {
+    const previousFile = previousByPath.get(file.repoPath);
+
+    try {
+      if (previousFile?.kind === FileKind.DIRECTORY) {
+        throw new Error("A directory already exists at this path");
+      }
+
+      const candidateSize = nextRepoSize - BigInt(previousFile?.size || 0) + BigInt(file.byteSize);
+      const candidateCount = nextFileCount + (previousFile ? 0 : 1);
+
+      if (Number(candidateSize) > maxMvpRepoSize) {
+        throw new Error("Repository is over 200 MB");
+      }
+
+      if (candidateCount > maxMvpFilesPerRepo) {
+        throw new Error("Repository is over 1000 files");
+      }
+
+      nextRepoSize = candidateSize;
+      nextFileCount = candidateCount;
+      acceptedForStorage.push(file);
+    } catch (error) {
+      rejected.push({
+        path: file.repoPath,
+        reason: error instanceof Error ? error.message : "File was rejected",
+      });
+    }
+  }
+
+  const prepared: Array<(typeof acceptedForStorage)[number] & { blob: Awaited<ReturnType<typeof saveBlob>>; previousFile: (typeof previousFiles)[number] | undefined }> = [];
+
+  for (const file of acceptedForStorage) {
+    try {
+      const blob = await saveBlob({
+        tmpPath: file.tmpPath,
+        originalName: file.originalName || file.repoPath,
+        userId: input.authorId,
+        byteSize: file.byteSize,
+      });
+      prepared.push({
+        ...file,
+        blob,
+        previousFile: previousByPath.get(file.repoPath),
+      });
+    } catch (error) {
+      rejected.push({
+        path: file.repoPath,
+        reason: error instanceof Error ? error.message : "File was rejected",
+      });
+    }
+  }
+
+  if (!prepared.length) {
+    return { uploaded: [], rejected };
+  }
+
+  const uploaded = await prisma.$transaction(async (tx) => {
+    const changedFiles: string[] = [];
+    const result: UploadBatchResult["uploaded"] = [];
+    let filesAdded = 0;
+    let filesChanged = 0;
+    let bytesAdded = 0n;
+    let bytesDeleted = 0n;
+    let readmePath: string | undefined;
+    let finalRepoSize = BigInt(repository.repoSize);
+    let finalFileCount = repository.fileCount;
+
+    for (const file of prepared) {
+      const previousFile = file.previousFile;
+      finalRepoSize = finalRepoSize - BigInt(previousFile?.size || 0) + BigInt(file.byteSize);
+      finalFileCount += previousFile ? 0 : 1;
+
+      for (const directoryPath of getDirectoryPaths(file.repoPath)) {
+        await tx.repositoryFile.upsert({
+          where: {
+            repositoryId_path: {
+              repositoryId: input.repositoryId,
+              path: directoryPath,
+            },
+          },
+          update: {},
+          create: {
+            repositoryId: input.repositoryId,
+            path: directoryPath,
+            parentPath: getParentPath(directoryPath),
+            name: getRepoFileName(directoryPath),
+            kind: FileKind.DIRECTORY,
+            size: 0,
+          },
+        });
+      }
+
+      if (previousFile?.blobId && previousFile.blobId !== file.blob.id) {
+        await tx.fileBlob.update({
+          where: { id: previousFile.blobId },
+          data: { refCount: { decrement: 1 } },
+        });
+      }
+
+      if (previousFile?.hash !== file.blob.checksum) {
+        await tx.fileBlob.update({
+          where: { id: file.blob.id },
+          data: { refCount: { increment: 1 } },
+        });
+      }
+
+      await tx.repositoryFile.upsert({
+        where: {
+          repositoryId_path: {
+            repositoryId: input.repositoryId,
+            path: file.repoPath,
+          },
+        },
+        update: {
+          blobId: file.blob.id,
+          name: getRepoFileName(file.repoPath),
+          extension: file.extension,
+          size: file.blob.originalSize,
+          mimeType: file.blob.mimeType,
+          hash: file.blob.checksum,
+          language: languageFromPath(file.repoPath),
+          isBinary: file.blob.isBinary,
+          isReadme: file.repoPath.toLowerCase() === "readme.md",
+        },
+        create: {
+          repositoryId: input.repositoryId,
+          blobId: file.blob.id,
+          path: file.repoPath,
+          parentPath: getParentPath(file.repoPath),
+          name: getRepoFileName(file.repoPath),
+          extension: file.extension,
+          kind: FileKind.FILE,
+          size: file.blob.originalSize,
+          mimeType: file.blob.mimeType,
+          hash: file.blob.checksum,
+          language: languageFromPath(file.repoPath),
+          isBinary: file.blob.isBinary,
+          isReadme: file.repoPath.toLowerCase() === "readme.md",
+        },
+      });
+
+      if (file.repoPath.toLowerCase() === "readme.md") {
+        readmePath = file.repoPath;
+      }
+
+      changedFiles.push(file.repoPath);
+      bytesAdded += file.blob.originalSize;
+      bytesDeleted += previousFile?.size || 0n;
+
+      if (previousFile) {
+        filesChanged += 1;
+        result.push({ path: file.repoPath, status: "updated" });
+      } else {
+        filesAdded += 1;
+        result.push({ path: file.repoPath, status: "created" });
+      }
+    }
+
+    await tx.repository.update({
+      where: { id: input.repositoryId },
+      data: {
+        repoSize: finalRepoSize,
+        fileCount: finalFileCount,
+        readmePath,
+        lastPushedAt: new Date(),
+      },
+    });
+
+    const commit = await tx.commitLite.create({
+      data: {
+        repositoryId: input.repositoryId,
+        authorId: input.authorId,
+        message: input.message || `Upload ${changedFiles.length} files`,
+        changedFiles,
+        filesAdded,
+        filesChanged,
+        bytesAdded,
+        bytesDeleted,
+      },
+    });
+
+    await tx.repoActivity.create({
+      data: {
+        repositoryId: input.repositoryId,
+        actorId: input.authorId,
+        type: filesChanged > 0 && filesAdded === 0 ? ActivityType.FILE_UPDATED : ActivityType.FILE_UPLOADED,
+        title: getUploadBatchActivityTitle(changedFiles, filesChanged),
+        targetPath: changedFiles.length === 1 ? changedFiles[0] : null,
+        commitLiteId: commit.id,
+      },
+    });
+
+    return result;
+  });
+
+  await Promise.all(
+    prepared
+      .map((file) => file.previousFile?.hash)
+      .filter((hash): hash is string => Boolean(hash))
+      .map((hash) => deleteBlobIfUnused(hash).catch(() => false)),
+  );
+
+  return { uploaded, rejected };
 }
 
 export async function deleteRepositoryFile(input: {

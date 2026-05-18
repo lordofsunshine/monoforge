@@ -14,7 +14,7 @@ export function assertSafeStorageKey(storageKey: string) {
 
 export function getStorageRoot() {
   const env = getEnv();
-  return path.resolve(/*turbopackIgnore: true*/ process.cwd(), env.STORAGE_PATH);
+  return path.isAbsolute(env.STORAGE_PATH) ? path.normalize(env.STORAGE_PATH) : path.resolve(env.STORAGE_PATH);
 }
 
 export function getStoragePath(storageKey: string) {

@@ -129,6 +129,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
     signIn: "/login",
   },
   providers: providers(),
+  events: {
+    async createUser({ user }) {
+      if (!user.id) {
+        return;
+      }
+
+      await getPrisma().storageQuota.upsert({
+        where: { userId: user.id },
+        update: { maxStorageBytes: 104857600n },
+        create: { userId: user.id, maxStorageBytes: 104857600n },
+      });
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

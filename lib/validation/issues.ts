@@ -17,15 +17,19 @@ export const issuePrioritySchema = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
 export const issueBoardStatusSchema = z.enum(["TODO", "IN_PROGRESS", "DONE"]);
 
 export const issueStatusSchema = z.enum(["OPEN", "CLOSED"]);
+const optionalTextField = (max: number) =>
+  z.preprocess((value) => (value === null || value === undefined ? "" : value), z.string().trim().max(max).optional().or(z.literal("")));
+const optionalPositiveIntField = z.preprocess((value) => (value === null || value === "" || value === undefined ? undefined : value), z.coerce.number().int().positive().max(1_000_000).optional());
+const labelListField = z.preprocess((value) => (Array.isArray(value) ? value : value ? [value] : []), z.array(issueLabelSlugSchema).max(8).default([]));
 
 export const createIssueSchema = z.object({
   title: issueTitleSchema,
   body: issueBodySchema,
   priority: issuePrioritySchema.default("NORMAL"),
   boardStatus: issueBoardStatusSchema.default("TODO"),
-  labels: z.array(issueLabelSlugSchema).max(8).default([]),
-  sourcePath: z.string().trim().max(512).optional().or(z.literal("")),
-  sourceLine: z.coerce.number().int().positive().max(1_000_000).optional(),
+  labels: labelListField,
+  sourcePath: optionalTextField(512),
+  sourceLine: optionalPositiveIntField,
 });
 
 export const updateIssueSchema = z.object({
@@ -33,7 +37,7 @@ export const updateIssueSchema = z.object({
   body: issueBodySchema,
   priority: issuePrioritySchema,
   boardStatus: issueBoardStatusSchema,
-  labels: z.array(issueLabelSlugSchema).max(8).default([]),
+  labels: labelListField,
 });
 
 export const issueStateSchema = z.object({

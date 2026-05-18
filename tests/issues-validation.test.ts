@@ -17,6 +17,21 @@ describe("issue validation", () => {
     expect(parsed.success ? parsed.data.sourceLine : 0).toBe(12);
   });
 
+  it("accepts empty issue source fields", () => {
+    const parsed = createIssueSchema.safeParse({
+      title: "Fix issue creation",
+      body: "",
+      priority: "NORMAL",
+      boardStatus: "TODO",
+      labels: [],
+      sourcePath: null,
+      sourceLine: "",
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.success ? parsed.data.sourceLine : "failed").toBeUndefined();
+  });
+
   it("rejects unsafe label slugs", () => {
     expect(
       createIssueSchema.safeParse({

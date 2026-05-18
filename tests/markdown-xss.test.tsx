@@ -23,4 +23,12 @@ describe("issue markdown rendering", () => {
     expect(html).not.toContain("javascript:");
     expect(html).toContain('href="#"');
   });
+
+  it("renders GitHub style markdown alerts safely", () => {
+    const html = renderToStaticMarkup(<Markdown content={"> [!WARNING]\n> Check this before upload."} />);
+
+    expect(html).toContain("WARNING");
+    expect(html).toContain("Check this before upload.");
+    expect(html).not.toContain("[!WARNING]");
+  });
 });
