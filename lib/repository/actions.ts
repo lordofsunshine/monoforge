@@ -8,6 +8,7 @@ import { writeAuditLog } from "@/lib/security/audit-log";
 import { createRepositorySchema, deleteFileSchema, slugifyRepositoryName, updateRepositorySchema } from "@/lib/validation/repository";
 import { upsertRepositoryFile, deleteRepositoryFile } from "@/server/repositories/files";
 import { setRepositoryStar } from "@/server/repositories/stars";
+import { deleteBlobIfUnused } from "@/server/storage/service";
 
 export type RepoFormState = {
   ok: boolean;
@@ -214,6 +215,31 @@ export async function deleteRepositoryAction(repositoryId: string) {
     redirect("/dashboard");
   }
 
+  const files = await prisma.repositoryFile.findMany({
+    where: {
+      repositoryId,
+      blobId: { not: null },
+      hash: { not: null },
+    },
+    select: {
+      blobId: true,
+      hash: true,
+    },
+  });
+  const blobUsage = new Map<string, { hash: string; count: number }>();
+
+  for (const file of files) {
+    if (!file.blobId || !file.hash) {
+      continue;
+    }
+
+    const current = blobUsage.get(file.blobId);
+    blobUsage.set(file.blobId, {
+      hash: file.hash,
+      count: (current?.count || 0) + 1,
+    });
+  }
+
   await writeAuditLog({
     actorId: user.id,
     action: "DELETE_REPOSITORY",
@@ -221,9 +247,20 @@ export async function deleteRepositoryAction(repositoryId: string) {
     target: repository.slug,
   });
 
-  await prisma.repository.delete({
-    where: { id: repositoryId },
+  await prisma.$transaction(async (tx) => {
+    for (const [blobId, item] of blobUsage) {
+      await tx.fileBlob.update({
+        where: { id: blobId },
+        data: { refCount: { decrement: item.count } },
+      });
+    }
+
+    await tx.repository.delete({
+      where: { id: repositoryId },
+    });
   });
+
+  await Promise.all([...new Set([...blobUsage.values()].map((item) => item.hash))].map((hash) => deleteBlobIfUnused(hash).catch(() => false)));
 
   redirect("/dashboard");
 }

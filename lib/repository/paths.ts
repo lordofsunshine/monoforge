@@ -16,8 +16,9 @@ export const blockedSecretExtensions = new Set([".pem", ".key", ".p12", ".pfx"])
 export function normalizeRepoPath(input: string) {
   const decoded = decodeURIComponent(input);
   const clean = decoded.replaceAll("\\", "/").split("/").filter(Boolean).join("/");
+  const segments = clean.split("/");
 
-  if (!clean || path.isAbsolute(decoded) || decoded.startsWith("/") || clean.startsWith(".") || clean.includes("../") || clean.includes("..")) {
+  if (!clean || path.isAbsolute(decoded) || decoded.startsWith("/") || segments.some((segment) => segment === "." || segment === "..")) {
     throw new Error("Invalid file path");
   }
 
@@ -36,7 +37,7 @@ export function normalizeRepoPath(input: string) {
   const name = path.posix.basename(clean);
   const firstSegment = clean.split("/")[0]?.toLowerCase();
 
-  if (firstSegment && ["storage", "etc", "proc", "root"].includes(firstSegment)) {
+  if (firstSegment && ["storage", "etc", "proc", "root", ".git"].includes(firstSegment)) {
     throw new Error("Invalid file path");
   }
 
