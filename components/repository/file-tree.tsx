@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FileKind, type RepositoryFile } from "@/generated/prisma/client";
-import { formatBytes } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import { LocalizedText } from "@/components/system/localized-text";
 
 type FileTreeItem = Pick<RepositoryFile, "id" | "path" | "name" | "kind" | "size" | "updatedAt">;
@@ -39,7 +39,7 @@ export function FileTree({ owner, repo, files }: FileTreeProps) {
                 {file.name}
               </span>
               <span className="text-faint">
-                {file.kind === FileKind.DIRECTORY ? <LocalizedText path="repo.dir" /> : formatBytes(file.size)}
+                {formatDate(file.updatedAt)}
               </span>
             </Link>
           );

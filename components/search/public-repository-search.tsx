@@ -17,7 +17,11 @@ function resultMeta(item: SearchResultItem, t: (path: string) => string) {
   return item.kind;
 }
 
-export function PublicRepositorySearch() {
+type PublicRepositorySearchProps = {
+  compact?: boolean;
+};
+
+export function PublicRepositorySearch({ compact = false }: PublicRepositorySearchProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -65,16 +69,21 @@ export function PublicRepositorySearch() {
   }, [query, t]);
 
   return (
-    <section className="w-full max-w-3xl rounded-lg border border-line bg-surface p-3">
-      <label className="block">
-        <span className="sr-only">{t("search.publicLabel")}</span>
-        <input
-          className="h-12 w-full rounded-md border border-line bg-background px-4 text-base outline-none placeholder:text-faint hover:border-lineStrong focus:border-foreground focus:ring-2 focus:ring-focus/20"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("search.publicPlaceholder")}
-          value={query}
-        />
-      </label>
+    <section className={compact ? "w-full" : "w-full max-w-3xl rounded-lg border border-line bg-surface p-3"}>
+      <div className="grid grid-cols-[minmax(0,1fr)_52px] gap-4">
+        <label className="block">
+          <span className="sr-only">{t("search.publicLabel")}</span>
+          <input
+            className="h-14 w-full rounded-md border border-line bg-background px-6 text-sm outline-none placeholder:text-faint hover:border-lineStrong focus:border-foreground focus:ring-2 focus:ring-focus/20"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("search.publicPlaceholder")}
+            value={query}
+          />
+        </label>
+        <button className="mf-primary inline-flex h-14 items-center justify-center rounded-md border" type="button" aria-label={t("search.publicLabel")}>
+          <span className="relative h-5 w-5 rounded-full border-2 border-current after:absolute after:-bottom-1 after:-right-1 after:h-2 after:w-2 after:rotate-45 after:border-r-2 after:border-current" />
+        </button>
+      </div>
       <div className="mt-3 min-h-10">
         {query.trim().length === 1 ? <p className="px-1 text-sm text-secondary">{t("search.oneMore")}</p> : null}
         {loading ? <p className="px-1 text-sm text-secondary">{t("search.searching")}</p> : null}
