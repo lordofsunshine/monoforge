@@ -81,7 +81,10 @@ export function PublicRepositorySearch({ compact = false }: PublicRepositorySear
           />
         </label>
         <button className="mf-primary inline-flex h-14 items-center justify-center rounded-md border" type="button" aria-label={t("search.publicLabel")}>
-          <span className="relative h-5 w-5 rounded-full border-2 border-current after:absolute after:-bottom-1 after:-right-1 after:h-2 after:w-2 after:rotate-45 after:border-r-2 after:border-current" />
+          <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <path d="M10.75 18.5a7.75 7.75 0 1 1 0-15.5 7.75 7.75 0 0 1 0 15.5Z" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+            <path d="m16.5 16.5 4.5 4.5" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+          </svg>
         </button>
       </div>
       <div className="mt-3 min-h-10">

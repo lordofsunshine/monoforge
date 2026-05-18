@@ -6,9 +6,10 @@ import { useI18n } from "@/components/system/preferences-provider";
 
 type UserMenuProps = {
   username?: string | null;
+  isAdmin?: boolean;
 };
 
-export function UserMenu({ username }: UserMenuProps) {
+export function UserMenu({ username, isAdmin = false }: UserMenuProps) {
   const { locale, setLocale, theme, toggleTheme, t } = useI18n();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -87,6 +88,11 @@ export function UserMenu({ username }: UserMenuProps) {
           {username ? (
             <>
               <div className="my-2 border-t border-line" />
+              {isAdmin ? (
+                <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/admin" onClick={() => setOpen(false)} role="menuitem">
+                  Admin
+                </Link>
+              ) : null}
               <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/settings/profile" onClick={() => setOpen(false)} role="menuitem">
                 {t("nav.settings")}
               </Link>

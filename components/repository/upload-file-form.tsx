@@ -131,21 +131,29 @@ export function UploadFileForm({ owner, repo }: UploadFileFormProps) {
     setSelectedFiles(Array.from(event.dataTransfer.files));
   }
 
-  async function uploadOne(item: UploadItem, message: string) {
+  async function uploadBatch(selectedItems: UploadItem[], message: string) {
     const formData = new FormData();
-    formData.set("file", item.file);
-    formData.set("path", item.path);
     formData.set("message", message);
+
+    for (const item of selectedItems) {
+      formData.append("paths", item.path);
+      formData.append("files", item.file);
+    }
 
     const response = await fetch(`/api/repositories/${owner}/${repo}/files`, {
       method: "POST",
       body: formData,
     });
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as { error?: string; uploaded?: UploadStatus["rejected"]; rejected?: UploadStatus["rejected"] } | null;
 
     if (!response.ok) {
-      throw new Error(payload?.error || `Failed to upload ${item.path}`);
+      throw new Error(payload?.error || t("upload.failed"));
     }
+
+    return {
+      uploadedCount: payload?.uploaded?.length || selectedItems.length,
+      rejected: payload?.rejected || [],
+    };
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -159,31 +167,27 @@ export function UploadFileForm({ owner, repo }: UploadFileFormProps) {
     startTransition(async () => {
       const message = commitMessage.trim() || t("upload.defaultMessage");
       setStatus({ done: 0, total: items.length, message: t("upload.uploading") });
-      const rejected: UploadStatus["rejected"] = [];
-      let uploaded = 0;
 
-      for (let index = 0; index < items.length; index += 1) {
-        try {
-          await uploadOne(items[index], message);
-          uploaded += 1;
-          setStatus({ done: index + 1, total: items.length, message: `${t("upload.uploaded")} ${uploaded} ${t("upload.of")} ${items.length}`, rejected });
-        } catch (error) {
-          rejected.push({
-            path: items[index].path,
-            reason: error instanceof Error ? error.message : t("upload.failed"),
-          });
-          setStatus({ done: index + 1, total: items.length, message: `${t("upload.uploaded")} ${uploaded} ${t("upload.of")} ${items.length}`, rejected });
-        }
+      try {
+        const result = await uploadBatch(items, message);
+        setStatus({
+          done: items.length,
+          total: items.length,
+          message: result.rejected.length ? `${t("upload.completeWithSkipped")} ${result.rejected.length}` : t("upload.complete"),
+          rejected: result.rejected,
+        });
+      } catch (error) {
+        setStatus({
+          done: 0,
+          total: items.length,
+          message: error instanceof Error ? error.message : t("upload.failed"),
+          rejected: [],
+        });
+        return;
       }
 
       setItems([]);
       setCommitMessage("");
-      setStatus({
-        done: items.length,
-        total: items.length,
-        message: rejected.length ? `${t("upload.completeWithSkipped")} ${rejected.length}` : t("upload.complete"),
-        rejected,
-      });
       router.refresh();
     });
   }

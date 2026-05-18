@@ -53,7 +53,15 @@ export function RepoSettingsForm({ repositoryId, name, description, visibility }
           </button>
         </div>
       </form>
-      <form action={deleteAction} className="rounded-lg border border-lineStrong bg-surface p-5">
+      <form
+        action={deleteAction}
+        className="rounded-lg border border-lineStrong bg-surface p-5"
+        onSubmit={(event) => {
+          if (!window.confirm(t("repoForm.deleteWarningText"))) {
+            event.preventDefault();
+          }
+        }}
+      >
         <h2 className="text-lg font-semibold">{t("repoForm.deleteRepository")}</h2>
         <p className="mt-2 text-sm leading-6 text-secondary">{t("repoForm.deleteText")}</p>
         <div className="mt-4 rounded-md border border-lineStrong bg-subtle px-3 py-3">

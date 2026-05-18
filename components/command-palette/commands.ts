@@ -17,7 +17,7 @@ export type RepoContext = {
   repo: string;
 };
 
-const systemPrefixes = new Set(["", "api", "dashboard", "docs", "login", "new", "register", "rules", "settings", "u"]);
+const systemPrefixes = new Set(["", "admin", "api", "dashboard", "docs", "login", "new", "register", "rules", "settings", "u"]);
 
 export function getRepoContext(pathname: string): RepoContext | null {
   const [owner, repo] = pathname.split("/").filter(Boolean);

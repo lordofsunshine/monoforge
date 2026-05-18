@@ -1,3 +1,4 @@
+import { Children, cloneElement, isValidElement, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -112,6 +113,82 @@ function safeImageSrc(src: string | undefined, owner?: string, repo?: string, so
   return `/api/repositories/${owner}/${repo}/raw/${encodeRepoPath(repoPath)}`;
 }
 
+function textFromNode(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(textFromNode).join("");
+  }
+
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return textFromNode(node.props.children);
+  }
+
+  return "";
+}
+
+function stripAlertMarker(node: ReactNode, marker: string): ReactNode {
+  if (typeof node === "string") {
+    return node.replace(marker, "").replace(/^\s+/, "");
+  }
+
+  if (Array.isArray(node)) {
+    let stripped = false;
+    return node.map((child) => {
+      if (stripped) {
+        return child;
+      }
+
+      const next = stripAlertMarker(child, marker);
+      if (textFromNode(child) !== textFromNode(next)) {
+        stripped = true;
+      }
+
+      return next;
+    });
+  }
+
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return cloneElement(node, {
+      children: stripAlertMarker(node.props.children, marker),
+    });
+  }
+
+  return node;
+}
+
+function alertInfo(children: ReactNode) {
+  const text = textFromNode(children).trimStart();
+  const match = text.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const marker = match[0];
+  const title = match[1].toUpperCase();
+  const items = Children.toArray(children);
+  const first = items[0];
+
+  if (isValidElement<{ children?: ReactNode }>(first)) {
+    const strippedFirst = cloneElement(first, {
+      children: stripAlertMarker(first.props.children, marker),
+    });
+
+    return {
+      title,
+      children: [strippedFirst, ...items.slice(1)],
+    };
+  }
+
+  return {
+    title,
+    children: <p className="mb-4 min-w-0 break-words [overflow-wrap:anywhere]">{text.replace(marker, "").trimStart()}</p>,
+  };
+}
+
 export function MarkdownRenderer({ content, empty = "", owner, repo, sourcePath, allowHtmlImages = false }: MarkdownRendererProps) {
   if (!content) {
     return <p className="text-sm text-faint">{empty}</p>;
@@ -150,7 +227,20 @@ export function MarkdownRenderer({ content, empty = "", owner, repo, sourcePath,
           },
           code: ({ children }) => <code className="rounded-sm border border-line bg-subtle px-1 py-0.5 font-mono text-xs text-foreground">{children}</code>,
           pre: ({ children }) => <pre className="mb-4 overflow-x-auto whitespace-pre rounded-md border border-line bg-subtle p-3 font-mono text-xs text-foreground">{children}</pre>,
-          blockquote: ({ children }) => <blockquote className="mb-4 border-l-2 border-lineStrong pl-3 text-secondary">{children}</blockquote>,
+          blockquote: ({ children }) => {
+            const alert = alertInfo(children);
+
+            if (alert) {
+              return (
+                <div className="mb-4 rounded-md border border-lineStrong bg-subtle px-4 py-3">
+                  <p className="mb-2 font-mono text-xs uppercase tracking-[0.14em] text-foreground">{alert.title}</p>
+                  <div className="text-secondary">{alert.children}</div>
+                </div>
+              );
+            }
+
+            return <blockquote className="mb-4 border-l-2 border-lineStrong pl-3 text-secondary">{children}</blockquote>;
+          },
           table: ({ children }) => (
             <div className="mb-4 overflow-auto">
               <table className="w-full border-collapse border border-line text-left">{children}</table>
