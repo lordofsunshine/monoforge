@@ -82,10 +82,41 @@ a {
   text-decoration: none;
 }
 
+a.underline {
+  text-decoration-line: underline;
+}
+
+p a:not([class*="inline-flex"]):not([class*="rounded"]),
+li a:not([class*="inline-flex"]):not([class*="rounded"]),
+.mf-markdown a {
+  border-bottom: 1px solid rgb(var(--mf-border-strong));
+  color: rgb(var(--mf-text));
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+p a:not([class*="inline-flex"]):not([class*="rounded"]):hover,
+li a:not([class*="inline-flex"]):not([class*="rounded"]):hover,
+.mf-markdown a:hover {
+  border-bottom-color: rgb(var(--mf-text));
+  opacity: 0.72;
+}
+
 input,
 textarea,
 button {
   font: inherit;
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a[href][class*="rounded"][class*="border"] {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 .font-mono {
@@ -94,7 +125,7 @@ button {
 
 .mf-container {
   width: 100%;
-  max-width: 1192px;
+  max-width: 1408px;
   margin-inline: auto;
   padding-inline: 1.25rem;
 }
@@ -105,7 +136,7 @@ button {
   }
 }
 
-@media (min-width: 1240px) {
+@media (min-width: 1460px) {
   .mf-container {
     padding-inline: 0;
   }
@@ -119,6 +150,12 @@ button {
 
 .mf-primary:hover {
   opacity: 0.9;
+}
+
+.mf-route-loader-line {
+  animation: mfRouteLine 900ms ease-in-out infinite;
+  box-shadow: 0 0 14px rgb(var(--mf-text) / 0.35);
+  transform-origin: left center;
 }
 
 .mf-menu > summary::-webkit-details-marker {
@@ -178,6 +215,20 @@ button {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes mfRouteLine {
+  0% {
+    transform: translateX(-110%) scaleX(0.45);
+  }
+
+  45% {
+    transform: translateX(55%) scaleX(0.9);
+  }
+
+  100% {
+    transform: translateX(220%) scaleX(0.35);
   }
 }
 

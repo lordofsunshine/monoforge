@@ -14,27 +14,34 @@ export default async function RegisterPage() {
   }
 
   return (
-    <section className="grid w-full max-w-md gap-6 py-10">
-      <div className="grid gap-2">
-        <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
-          <LocalizedText path="auth.eyebrow" />
-        </p>
-        <h1 className="text-2xl font-semibold">
-          <LocalizedText path="auth.registerTitle" />
-        </h1>
-        <p className="text-sm leading-6 text-secondary">
-          <LocalizedText path="auth.registerDescription" />
+    <section className="grid w-full gap-10 py-10 lg:grid-cols-[minmax(0,460px)_minmax(0,1fr)] lg:items-center lg:py-14">
+      <div className="grid gap-6">
+        <div className="grid gap-2">
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
+            <LocalizedText path="auth.eyebrow" />
+          </p>
+          <h1 className="text-2xl font-semibold">
+            <LocalizedText path="auth.registerTitle" />
+          </h1>
+          <p className="text-sm leading-6 text-secondary">
+            <LocalizedText path="auth.registerDescription" />
+          </p>
+        </div>
+        <div className="rounded-lg border border-line bg-surface p-5">
+          <AuthForm mode="register" action={registerAction} googleEnabled={googleEnabled} googleAction={googleSignInAction} />
+        </div>
+        <p className="text-sm text-secondary">
+          <LocalizedText path="auth.alreadyRegistered" />{" "}
+          <Link className="text-foreground underline underline-offset-4" href="/login">
+            <LocalizedText path="nav.login" />
+          </Link>
         </p>
       </div>
-      <div className="rounded-lg border border-line bg-surface p-5">
-        <AuthForm mode="register" action={registerAction} googleEnabled={googleEnabled} googleAction={googleSignInAction} />
+      <div className="relative hidden min-h-[560px] overflow-hidden rounded-2xl bg-surface lg:block">
+        <div className="absolute inset-0 bg-[url('/hero.png')] bg-cover bg-center opacity-[0.58] grayscale contrast-125 brightness-105 dark:opacity-100 dark:brightness-[1.85] dark:contrast-[1.65]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/24 to-background/0" />
+        <div className="mf-grid-glow absolute inset-0 opacity-55 dark:opacity-80" />
       </div>
-      <p className="text-sm text-secondary">
-        <LocalizedText path="auth.alreadyRegistered" />{" "}
-        <Link className="text-foreground underline underline-offset-4" href="/login">
-          <LocalizedText path="nav.login" />
-        </Link>
-      </p>
     </section>
   );
 }

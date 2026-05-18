@@ -7,7 +7,9 @@ import { CommandPalette } from "@/components/command-palette/command-palette";
 import { MainNav } from "@/components/layout/main-nav";
 import { PreferenceScript } from "@/components/system/preference-script";
 import { PreferencesProvider } from "@/components/system/preferences-provider";
+import { RouteLineLoader } from "@/components/system/route-line-loader";
 import { UserMenu } from "@/components/system/user-menu";
+import { isAdminEmail } from "@/lib/admin";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -105,15 +107,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <PreferencesProvider>
-          <header className="sticky top-0 z-40 border-b border-line bg-background/90 backdrop-blur">
-            <div className="mf-container flex min-h-14 flex-wrap items-center justify-between gap-2 py-2 md:flex-nowrap">
+          <RouteLineLoader />
+          <header className="sticky top-0 z-40 bg-transparent px-4 py-3">
+            <div className="mx-auto flex min-h-20 w-full max-w-[1408px] flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-background/[0.92] py-2 pl-4 pr-4 shadow-2xl shadow-black/[0.08] backdrop-blur md:flex-nowrap md:pr-6 lg:pr-8">
               <Link href="/" className="font-mono text-sm font-semibold tracking-normal">
                 MonoForge
               </Link>
               <CommandPalette username={session?.user?.username ?? null} />
               <nav className="flex items-center gap-1 text-sm">
                 <MainNav username={session?.user?.username ?? null} />
-                <UserMenu username={session?.user?.username ?? null} />
+                <UserMenu username={session?.user?.username ?? null} isAdmin={isAdminEmail(session?.user?.email)} />
                 {session?.user ? <SignOutButton /> : null}
               </nav>
             </div>
