@@ -22,6 +22,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "MonoForge",
+  url: "https://monoforge.org",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Web",
+  description: "MonoForge is a minimal monochrome platform for publishing repositories, uploading folders, reading README files and tracking issues.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  codeRepository: "https://github.com/lordofsunshine/monoforge",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://monoforge.org"),
   applicationName: "MonoForge",
@@ -61,7 +77,7 @@ export const metadata: Metadata = {
     description: "Publish repositories, upload folders, read README files, track issues and share projects in a calm monochrome workspace.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "MonoForge",
@@ -72,7 +88,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "MonoForge - Minimal project hosting",
     description: "A quiet monochrome space for repositories, files, README pages and issues.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   icons: {
     icon: [
@@ -108,6 +124,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <PreferencesProvider>
           <RouteLineLoader />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
           <header className="sticky top-0 z-40 bg-transparent px-4 py-3">
             <div className="mx-auto flex min-h-20 w-full max-w-[1408px] flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-background/[0.92] py-2 pl-4 pr-4 shadow-2xl shadow-black/[0.08] backdrop-blur md:flex-nowrap md:pr-6 lg:pr-8">
               <Link href="/" className="font-mono text-sm font-semibold tracking-normal">

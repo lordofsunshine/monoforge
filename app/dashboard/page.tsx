@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ActivityFeed } from "@/components/repository/activity-feed";
 import { QuotaBar } from "@/components/repository/quota-bar";
+import { LocalizedCount } from "@/components/system/localized-format";
 import { LocalizedText } from "@/components/system/localized-text";
 import { requireUser } from "@/lib/auth/access";
 import { getEnv } from "@/lib/env";
@@ -86,7 +87,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="grid content-start gap-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
@@ -112,7 +113,7 @@ export default async function DashboardPage() {
                     <p className="mt-1 line-clamp-1 text-sm text-secondary">{repository.description || <LocalizedText path="common.noDescription" />}</p>
                   </div>
                   <div className="whitespace-nowrap font-mono text-xs text-faint">
-                    {formatBytes(repository.repoSize)} · {repository.starCount} <LocalizedText path="common.stars" /> · {repository.issueCount} <LocalizedText path="common.issues" />
+                    {formatBytes(repository.repoSize)} / <LocalizedCount value={repository.starCount} unit="stars" /> / <LocalizedCount value={repository.issueCount} unit="issues" />
                   </div>
                 </Link>
               ))

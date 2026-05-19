@@ -83,13 +83,17 @@ a {
 }
 
 a.underline {
+  text-decoration-line: none;
+}
+
+a.underline:hover {
   text-decoration-line: underline;
 }
 
 p a:not([class*="inline-flex"]):not([class*="rounded"]),
 li a:not([class*="inline-flex"]):not([class*="rounded"]),
 .mf-markdown a {
-  border-bottom: 1px solid rgb(var(--mf-border-strong));
+  border-bottom: 1px solid transparent;
   color: rgb(var(--mf-text));
   text-decoration: none;
   transition:
@@ -102,6 +106,7 @@ li a:not([class*="inline-flex"]):not([class*="rounded"]):hover,
 .mf-markdown a:hover {
   border-bottom-color: rgb(var(--mf-text));
   opacity: 0.72;
+  text-decoration: none;
 }
 
 input,

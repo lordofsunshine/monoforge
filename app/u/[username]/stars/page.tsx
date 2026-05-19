@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { RepositoryVisibility } from "@/generated/prisma/client";
 import { formatBytes } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
+import { LocalizedCount } from "@/components/system/localized-format";
 import { LocalizedText } from "@/components/system/localized-text";
 
 type StarredPageProps = {
@@ -86,7 +87,7 @@ export default async function StarredRepositoriesPage({ params }: StarredPagePro
                 <p className="mt-1 line-clamp-2 text-sm leading-6 text-secondary">{star.repository.description || star.repository.name}</p>
               </div>
               <div className="font-mono text-xs text-faint">
-                {formatBytes(star.repository.repoSize)} · {star.repository.starCount} <LocalizedText path="common.stars" /> · {star.repository.issueCount} <LocalizedText path="common.issues" />
+                {formatBytes(star.repository.repoSize)} · <LocalizedCount value={star.repository.starCount} unit="stars" /> · <LocalizedCount value={star.repository.issueCount} unit="issues" />
               </div>
             </Link>
           ))

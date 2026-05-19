@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { LocalizedCount } from "@/components/system/localized-format";
 import { RepositoryVisibility } from "@/generated/prisma/client";
 import { formatBytes } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
@@ -72,7 +73,7 @@ export default async function CurrentUserStarsPage() {
                 <p className="mt-1 line-clamp-2 text-sm leading-6 text-secondary">{star.repository.description || star.repository.name}</p>
               </div>
               <div className="font-mono text-xs text-faint">
-                {formatBytes(star.repository.repoSize)} · {star.repository.starCount} stars · {star.repository.issueCount} issues
+                {formatBytes(star.repository.repoSize)} · <LocalizedCount value={star.repository.starCount} unit="stars" /> · <LocalizedCount value={star.repository.issueCount} unit="issues" />
               </div>
             </Link>
           ))

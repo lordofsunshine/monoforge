@@ -74,8 +74,8 @@ export default function HomePage() {
                 <Link className="mf-primary inline-flex h-[52px] min-w-40 items-center justify-center rounded-md border px-7 font-medium shadow-lg shadow-black/10" href="/register">
                   <LocalizedText path="home.createAccount" />
                 </Link>
-                <Link className="inline-flex h-[52px] min-w-40 items-center justify-center rounded-md border border-line bg-surface/90 px-7 font-medium shadow-sm hover:border-lineStrong hover:bg-subtle" href="/docs">
-                  <LocalizedText path="nav.docs" />
+                <Link className="inline-flex h-[52px] min-w-40 items-center justify-center rounded-md border border-line bg-surface/90 px-7 font-medium shadow-sm hover:border-lineStrong hover:bg-subtle" href="/explore">
+                  <LocalizedText path="nav.explore" />
                 </Link>
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-10 grid overflow-hidden rounded-2xl border border-line bg-surface/70 md:grid-cols-3">
+          <div className="mt-10 grid overflow-hidden rounded-2xl border border-line bg-surface shadow-sm md:grid-cols-3">
             {features.map(([title, text, icon]) => (
               <article className="grid gap-5 border-b border-line px-7 py-9 last:border-b-0 md:grid-cols-[72px_1fr] md:border-b-0 md:border-r md:last:border-r-0" key={title}>
                 <div className="flex h-[72px] w-[72px] items-center justify-center rounded-lg border border-line bg-background text-secondary shadow-sm">

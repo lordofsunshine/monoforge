@@ -1,12 +1,74 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPrisma } from "@/lib/prisma";
-import { RepositoryVisibility } from "@/generated/prisma/client";
+import { RepositoryStatus, RepositoryVisibility } from "@/generated/prisma/client";
+import { LocalizedCount } from "@/components/system/localized-format";
 import { LocalizedText } from "@/components/system/localized-text";
 
 type ProfilePageProps = {
   params: Promise<{ username: string }>;
 };
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  const user = await getPrisma().user.findUnique({
+    where: { username: username.toLowerCase() },
+    select: {
+      username: true,
+      name: true,
+      bio: true,
+      image: true,
+      updatedAt: true,
+      _count: {
+        select: {
+          repositories: {
+            where: {
+              visibility: RepositoryVisibility.PUBLIC,
+              status: RepositoryStatus.ACTIVE,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return {
+      title: "Profile not found",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const displayName = user.name || user.username;
+  const title = `${displayName} (@${user.username})`;
+  const description = user.bio || `${displayName}'s public MonoForge profile with ${user._count.repositories} public repositories.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/u/${user.username}`,
+    },
+    openGraph: {
+      type: "profile",
+      url: `/u/${user.username}`,
+      title,
+      description,
+      images: user.image ? [{ url: user.image, alt: title }] : undefined,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: user.image ? [user.image] : undefined,
+    },
+    robots: {
+      index: user._count.repositories > 0,
+      follow: true,
+    },
+  };
+}
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
@@ -67,9 +129,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <h1 className="mt-1 text-3xl font-semibold">{user.name || user.username}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-secondary">{user.bio || <LocalizedText path="common.noDescription" />}</p>
           <div className="mt-5 flex flex-wrap gap-4 font-mono text-xs text-faint">
-            <span>{user._count.repositories} <LocalizedText path="dashboard.repositories" /></span>
-            <span>{totalStars} <LocalizedText path="common.stars" /></span>
-            <span>{user._count.issues} <LocalizedText path="common.issues" /></span>
+            <span><LocalizedCount value={user._count.repositories} unit="repositories" /></span>
+            <span><LocalizedCount value={totalStars} unit="stars" /></span>
+            <span><LocalizedCount value={user._count.issues} unit="issues" /></span>
             <Link className="hover:text-foreground" href={`/u/${user.username}/stars`}>
               <LocalizedText path="profile.starredRepositories" />
             </Link>
@@ -93,7 +155,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   <p className="mt-1 line-clamp-2 text-sm leading-6 text-secondary">{repository.description || <LocalizedText path="common.noDescription" />}</p>
                 </div>
                 <div className="font-mono text-xs text-faint">
-                  {repository.starCount} <LocalizedText path="common.stars" /> · {repository.issueCount} <LocalizedText path="common.issues" />
+                  <LocalizedCount value={repository.starCount} unit="stars" /> · <LocalizedCount value={repository.issueCount} unit="issues" />
                 </div>
               </Link>
             ))
