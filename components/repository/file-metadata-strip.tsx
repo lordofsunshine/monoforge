@@ -1,4 +1,5 @@
-import { formatBytes, formatDate } from "@/lib/format";
+import { formatBytes } from "@/lib/format";
+import { LocalizedDate } from "@/components/system/localized-format";
 import { LocalizedText } from "@/components/system/localized-text";
 
 type FileMetadataStripProps = {
@@ -14,9 +15,9 @@ export function FileMetadataStrip({ size, compressedSize, language, updatedAt, h
     ["repo.size", formatBytes(size)],
     ["storage.stored", compressedSize ? formatBytes(compressedSize) : "repo.rawValue"],
     ["repo.language", language || "repo.text"],
-    ["repo.changed", formatDate(updatedAt)],
+    ["repo.changed", <LocalizedDate value={updatedAt} />],
     ["repo.hash", hash ? hash.slice(0, 12) : "repo.none"],
-  ];
+  ] as const;
 
   return (
     <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line md:grid-cols-5">
@@ -25,7 +26,7 @@ export function FileMetadataStrip({ size, compressedSize, language, updatedAt, h
           <p className="font-mono text-[10px] uppercase text-faint">
             <LocalizedText path={label} />
           </p>
-          <p className="mt-1 truncate font-mono text-xs text-secondary">{value.includes(".") ? <LocalizedText path={value} /> : value}</p>
+          <p className="mt-1 truncate font-mono text-xs text-secondary">{typeof value === "string" && value.includes(".") ? <LocalizedText path={value} /> : value}</p>
         </div>
       ))}
     </div>

@@ -20,6 +20,9 @@ const envSchema = z.object({
   PROCESS_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   IMAGE_MAX_WIDTH: z.coerce.number().int().positive().default(1600),
   IMAGE_QUALITY: z.coerce.number().int().min(1).max(100).default(82),
+  TRANSLATE_API_URL: z.string().url().default("https://libretranslate.com/translate"),
+  TRANSLATE_TIMEOUT_MS: z.coerce.number().int().positive().default(12_000),
+  TRANSLATE_MAX_CHARS: z.coerce.number().int().positive().default(12_000),
 });
 
 export function getEnv() {

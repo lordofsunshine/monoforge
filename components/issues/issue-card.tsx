@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { IssuePriority, IssueStatus, type Issue, type IssueLabel, type User } from "@/generated/prisma/client";
-import { formatDate } from "@/lib/format";
 import { LabelBadge } from "@/components/issues/label-badge";
+import { LocalizedCount, LocalizedDate } from "@/components/system/localized-format";
 import { LocalizedText } from "@/components/system/localized-text";
 
 type IssueWithBits = Pick<Issue, "id" | "number" | "title" | "digest" | "status" | "priority" | "commentCount" | "updatedAt" | "sourcePath" | "sourceLine"> & {
@@ -44,8 +44,8 @@ export function IssueCard({ issue, href }: IssueCardProps) {
       </div>
       <div className="flex flex-wrap gap-3 font-mono text-xs text-faint">
         <span>@{issue.author.username}</span>
-        <span>{issue.commentCount} <LocalizedText path="issuesPage.comments" /></span>
-        <span>{formatDate(issue.updatedAt)}</span>
+        <span><LocalizedCount value={issue.commentCount} unit="comments" /></span>
+        <span><LocalizedDate value={issue.updatedAt} /></span>
         {issue.sourcePath ? (
           <span>
             {issue.sourcePath}

@@ -1,4 +1,5 @@
-import { formatBytes, formatDate } from "@/lib/format";
+import { formatBytes } from "@/lib/format";
+import { LocalizedDate } from "@/components/system/localized-format";
 import { LocalizedText } from "@/components/system/localized-text";
 import type { RepoMetrics } from "@/server/repositories/metrics";
 
@@ -28,7 +29,7 @@ export function RepoHealthStrip({ metrics }: RepoHealthStripProps) {
         <p className="font-mono text-[10px] uppercase text-faint">
           <LocalizedText path="storage.lastUpdate" />
         </p>
-        <p className="mt-1 font-mono text-xs text-secondary">{formatDate(metrics.lastUpdate)}</p>
+        <p className="mt-1 font-mono text-xs text-secondary"><LocalizedDate value={metrics.lastUpdate} /></p>
       </div>
     </div>
   );

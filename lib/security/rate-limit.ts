@@ -10,6 +10,7 @@ export const rateLimitProfiles = {
   star: { limit: 60, windowMs: 60_000 },
   download: { limit: 120, windowMs: 60_000 },
   archive: { limit: 10, windowMs: 60_000 },
+  translate: { limit: 12, windowMs: 60_000 },
 } as const;
 
 export type RateLimitProfile = keyof typeof rateLimitProfiles;
