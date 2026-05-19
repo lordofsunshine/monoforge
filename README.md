@@ -1,4 +1,4 @@
-# MonoForge
+# monoforge.org
 
 A platform for public and private publication of open-source projects.
 
@@ -9,47 +9,38 @@ A page is available on our website: https://monoforge.org/lordofsunshine/monofor
 
 ## Service Updates
 
-1. **Batch file upload**
-   Multiple files are now uploaded together in one batch. This creates one commit and one activity event instead of separate events for each file.
+1. **SEO and OG banners**
+   Updated meta tags, the global `og-image.png` banner, and dynamic Open Graph previews for public repositories.
 
-2. **Unified repository deletion**
-   Repository deletion now works through one shared backend service. This means the UI and API use the same deletion logic.
+2. **Repository SEO**
+   Public repositories now have better page titles, descriptions, preview snippets, canonical links, Open Graph data, Twitter previews, and `schema.org` markup for `SoftwareSourceCode`.
 
-3. **Full repository cleanup**
-   When a repository is deleted, all related data is cleaned up too: files, issues, comments, stars, commits, activity records, and unused file blobs. Storage references are also updated correctly.
+3. **Sitemap update**
+   The public sitemap has been updated. It now includes `/explore` and public pages that can be indexed by search engines.
 
-4. **Improved service layer**
-   Important backend logic has been moved into dedicated services for repositories, files, stars, and issues. This makes the system easier to maintain and more reliable.
+4. **README translation**
+   Added a translation link to the right side of the README header. The translation follows the selected site language: English or Russian.
 
-5. **Issue creation fix**
-   Fixed an error that could appear when creating a discussion without selecting a source file or source line.
+5. **Better README formatting after translation**
+   README translations now keep the original Markdown structure, including tables, links, images, code blocks, and GitHub-style alerts.
 
-6. **Markdown alerts**
-   Added support for Markdown alert blocks: NOTE, TIP, IMPORTANT, WARNING, and CAUTION.
+6. **Mobile header improvements**
+   On mobile, Dashboard and Profile were moved into the menu. Only Menu and Logout remain visible outside.
 
-7. **Admin page**
-   Added a new read-only admin page at `/admin`.
+7. **Explore page**
+   Added a public `/explore` page where users can search projects, use filters, and sort by updates, stars, languages, size, and README availability.
 
-8. **Admin metrics**
-   The admin page now shows useful service statistics, including users, repositories, files, issues, stars, storage usage, database usage, and audit events.
+8. **Homepage button update**
+   The “How to use” button on the homepage was renamed and now points users to the public project catalog.
 
-9. **Storage path fix**
-   Fixed storage path logic so production builds do not include unnecessary dependencies.
+9. **Project language detection**
+   Added automatic project language detection based on files. Languages are shown as a compact monochrome percentage bar.
 
-10. **UI consistency improvements**
-    Improved button sizes, containers, mobile spacing, long names, and empty states for a cleaner and more consistent interface.
+10. **Removed duplicate language blocks**
+    Project languages are now shown only under the “Latest changes” section.
 
-11. **Landing page spacing**
-    Fixed the spacing between the main CTA section and the “Find public projects” block.
+11. **Activity grouping**
+    Activity is now grouped by day and by similar event types, such as file uploads, issues, and stars.
 
-12. **Header alignment**
-    Adjusted the header logo position so it aligns better with the hero section.
-
-13. **Hero image visibility**
-    Made the `hero.png` background more visible in dark theme.
-
-14. **Auth page improvements**
-    Added a hero visual to the right side of the login and register pages. Removed the image border for a cleaner look.
-
-15. **Text link styling**
-    Links inside regular text are now easier to notice thanks to a subtle underline/border style.
+12. **UI cleanup**
+    Improved the mobile header, README header, repository sidebar, and the visual consistency of new interface blocks.

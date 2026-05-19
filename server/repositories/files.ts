@@ -10,6 +10,7 @@ export const maxMvpFileSize = 10 * 1024 * 1024;
 export const maxMvpRepoSize = 200 * 1024 * 1024;
 export const maxMvpFilesPerRepo = 1000;
 export const textPreviewLimit = 1024 * 1024;
+const uploadTransactionOptions = { maxWait: 20_000, timeout: 120_000 };
 
 export type TempUploadItem = {
   path: string;
@@ -399,7 +400,7 @@ export async function upsertRepositoryFileFromTemp(input: {
         commitLiteId: commit.id,
       },
     });
-  });
+  }, uploadTransactionOptions);
 
   return repoPath;
 }
@@ -660,7 +661,7 @@ export async function uploadRepositoryFilesBatch(input: {
     });
 
     return result;
-  });
+  }, uploadTransactionOptions);
 
   await Promise.all(
     prepared
