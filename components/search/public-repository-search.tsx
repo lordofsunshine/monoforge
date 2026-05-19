@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/components/system/preferences-provider";
+import { formatCount, type FormatLocale } from "@/lib/format";
 import type { SearchResponse, SearchResultItem } from "@/types/search";
 
-function resultMeta(item: SearchResultItem, t: (path: string) => string) {
+function resultMeta(item: SearchResultItem, locale: FormatLocale) {
   if (item.kind === "repository") {
-    return `${item.meta?.stars ?? 0} ${t("common.stars")} · ${item.meta?.files ?? 0} ${t("common.files")}`;
+    return `${formatCount(Number(item.meta?.stars ?? 0), "stars", locale)} · ${formatCount(Number(item.meta?.files ?? 0), "files", locale)}`;
   }
 
   if (item.kind === "issue") {
@@ -22,7 +23,7 @@ type PublicRepositorySearchProps = {
 };
 
 export function PublicRepositorySearch({ compact = false }: PublicRepositorySearchProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -100,7 +101,7 @@ export function PublicRepositorySearch({ compact = false }: PublicRepositorySear
                   <span className="block truncate text-sm font-medium">{item.title}</span>
                   {item.subtitle ? <span className="block truncate text-xs text-secondary">{item.subtitle}</span> : null}
                 </span>
-                <span className="font-mono text-xs text-faint">{resultMeta(item, t)}</span>
+                <span className="font-mono text-xs text-faint">{resultMeta(item, locale)}</span>
               </Link>
             ))}
           </div>

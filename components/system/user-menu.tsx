@@ -88,6 +88,12 @@ export function UserMenu({ username, isAdmin = false }: UserMenuProps) {
           {username ? (
             <>
               <div className="my-2 border-t border-line" />
+              <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle sm:hidden" href="/dashboard" onClick={() => setOpen(false)} role="menuitem">
+                {t("nav.dashboard")}
+              </Link>
+              <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle sm:hidden" href={`/u/${username}`} onClick={() => setOpen(false)} role="menuitem">
+                {t("nav.profile")}
+              </Link>
               {isAdmin ? (
                 <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/admin" onClick={() => setOpen(false)} role="menuitem">
                   Admin
