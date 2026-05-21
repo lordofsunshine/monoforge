@@ -45,6 +45,7 @@ services:
       STORAGE_PATH: /app/storage
       AUTH_URL: https://monoforge.org
       AUTH_TRUST_HOST: "true"
+      TRUST_PROXY_HEADERS: "true"
       NEXTAUTH_URL: https://monoforge.org
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"

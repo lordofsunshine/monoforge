@@ -1,11 +1,12 @@
 import { ActivityType } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
+import { dispatchRepositoryWebhooks } from "@/server/storage/webhooks";
 
 export async function setRepositoryStar(input: { repositoryId: string; userId: string; starred: boolean }) {
   const prisma = getPrisma();
 
   if (input.starred) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const created = await tx.star.createMany({
         data: {
           userId: input.userId,
@@ -30,7 +31,7 @@ export async function setRepositoryStar(input: { repositoryId: string; userId: s
           },
         });
 
-        return { starred: true, starCount: repository.starCount };
+        return { starred: true, starCount: repository.starCount, changed: true };
       }
 
       const repository = await tx.repository.findUniqueOrThrow({
@@ -38,8 +39,18 @@ export async function setRepositoryStar(input: { repositoryId: string; userId: s
         select: { starCount: true },
       });
 
-      return { starred: true, starCount: repository.starCount };
+      return { starred: true, starCount: repository.starCount, changed: false };
     });
+
+    if (result.changed) {
+      await dispatchRepositoryWebhooks({
+        repositoryId: input.repositoryId,
+        event: "repository.starred",
+        payload: { userId: input.userId, starCount: result.starCount },
+      });
+    }
+
+    return { starred: result.starred, starCount: result.starCount };
   }
 
   return prisma.$transaction(async (tx) => {

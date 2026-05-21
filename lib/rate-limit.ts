@@ -4,6 +4,9 @@ type Bucket = {
 };
 
 const buckets = new Map<string, Bucket>();
+const maxBuckets = Number(process.env.RATE_LIMIT_MAX_BUCKETS || 20_000);
+const cleanupIntervalMs = Number(process.env.RATE_LIMIT_CLEANUP_INTERVAL_MS || 60_000);
+let nextCleanupAt = 0;
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -12,6 +15,8 @@ export type RateLimitResult = {
 };
 
 export function checkRateLimit(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitResult {
+  cleanupExpiredRateLimits(now);
+
   const existing = buckets.get(key);
 
   if (!existing || existing.resetAt <= now) {
@@ -30,4 +35,37 @@ export function checkRateLimit(key: string, limit: number, windowMs: number, now
 
 export function resetRateLimits() {
   buckets.clear();
+  nextCleanupAt = 0;
+}
+
+export function cleanupExpiredRateLimits(now = Date.now(), force = false) {
+  if (!force && now < nextCleanupAt && buckets.size <= maxBuckets) {
+    return;
+  }
+
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) {
+      buckets.delete(key);
+    }
+  }
+
+  if (buckets.size > maxBuckets) {
+    const overflow = buckets.size - maxBuckets;
+    let removed = 0;
+
+    for (const key of buckets.keys()) {
+      buckets.delete(key);
+      removed += 1;
+
+      if (removed >= overflow) {
+        break;
+      }
+    }
+  }
+
+  nextCleanupAt = now + cleanupIntervalMs;
+}
+
+export function getRateLimitBucketCount() {
+  return buckets.size;
 }

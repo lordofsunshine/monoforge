@@ -3,6 +3,7 @@ import { getPrisma } from "@/lib/prisma";
 import { createIssueDigest, type createIssueSchema, type updateIssueSchema } from "@/lib/validation/issues";
 import type { z } from "zod";
 import { ensureDefaultIssueLabels } from "@/server/issues/labels";
+import { dispatchRepositoryWebhooks } from "@/server/storage/webhooks";
 
 export type CreateIssueInput = z.infer<typeof createIssueSchema>;
 export type UpdateIssueInput = z.infer<typeof updateIssueSchema>;
@@ -11,7 +12,7 @@ export async function createIssue(repositoryId: string, authorId: string, input:
   const prisma = getPrisma();
   await ensureDefaultIssueLabels(repositoryId);
 
-  return prisma.$transaction(async (tx) => {
+  const issue = await prisma.$transaction(async (tx) => {
     const latest = await tx.issue.findFirst({
       where: { repositoryId },
       orderBy: { number: "desc" },
@@ -63,6 +64,14 @@ export async function createIssue(repositoryId: string, authorId: string, input:
 
     return issue;
   });
+
+  await dispatchRepositoryWebhooks({
+    repositoryId,
+    event: "issue.opened",
+    payload: { number: issue.number, title: issue.title },
+  }).catch(() => undefined);
+
+  return issue;
 }
 
 export async function updateIssue(issueId: string, repositoryId: string, input: UpdateIssueInput) {
@@ -129,12 +138,18 @@ export async function setIssueStatus(input: {
       },
     }),
   ]);
+
+  await dispatchRepositoryWebhooks({
+    repositoryId: input.repositoryId,
+    event: closing ? "issue.closed" : "issue.opened",
+    payload: { number: input.number },
+  }).catch(() => undefined);
 }
 
 export async function createIssueComment(issueId: string, repositoryId: string, issueNumber: number, authorId: string, body: string) {
   const prisma = getPrisma();
 
-  return prisma.$transaction([
+  const result = await prisma.$transaction([
     prisma.issueComment.create({
       data: { issueId, authorId, body },
     }),
@@ -152,4 +167,12 @@ export async function createIssueComment(issueId: string, repositoryId: string, 
       },
     }),
   ]);
+
+  await dispatchRepositoryWebhooks({
+    repositoryId,
+    event: "issue.commented",
+    payload: { number: issueNumber },
+  }).catch(() => undefined);
+
+  return result;
 }

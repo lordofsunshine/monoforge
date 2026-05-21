@@ -5,6 +5,7 @@ import { getPrisma } from "@/lib/prisma";
 import { assertAllowedExtension, getDirectoryPaths, getParentPath, getRepoExtension, getRepoFileName, normalizeRepoPath } from "@/lib/repository/paths";
 import { ensureStorageDirs, getStoragePath } from "@/server/storage/paths";
 import { deleteBlobIfUnused, saveBlob, streamBlobToOutput } from "@/server/storage/service";
+import { dispatchRepositoryWebhooks } from "@/server/storage/webhooks";
 
 export const maxMvpFileSize = 10 * 1024 * 1024;
 export const maxMvpRepoSize = 200 * 1024 * 1024;
@@ -252,6 +253,8 @@ export async function upsertRepositoryFileFromTemp(input: {
     byteSize: input.byteSize,
   });
 
+  let wasUpdate = false;
+
   await prisma.$transaction(async (tx) => {
     const repository = await tx.repository.findUnique({
       where: { id: input.repositoryId },
@@ -285,6 +288,8 @@ export async function upsertRepositoryFileFromTemp(input: {
     if (previousFile?.kind === FileKind.DIRECTORY) {
       throw new Error("A directory already exists at this path");
     }
+
+    wasUpdate = Boolean(previousFile);
 
     const nextRepoSize = BigInt(repository.repoSize) - BigInt(previousFile?.size || 0) + BigInt(input.byteSize);
     const nextFileCount = repository.fileCount + (previousFile ? 0 : 1);
@@ -401,6 +406,12 @@ export async function upsertRepositoryFileFromTemp(input: {
       },
     });
   }, uploadTransactionOptions);
+
+  await dispatchRepositoryWebhooks({
+    repositoryId: input.repositoryId,
+    event: wasUpdate ? "file.updated" : "file.uploaded",
+    payload: { path: repoPath, message: input.message || null },
+  }).catch(() => undefined);
 
   return repoPath;
 }
@@ -670,6 +681,17 @@ export async function uploadRepositoryFilesBatch(input: {
       .map((hash) => deleteBlobIfUnused(hash).catch(() => false)),
   );
 
+  const event = uploaded.every((file) => file.status === "updated") ? "file.updated" : "file.uploaded";
+  await dispatchRepositoryWebhooks({
+    repositoryId: input.repositoryId,
+    event,
+    payload: {
+      message: input.message || null,
+      files: uploaded,
+      rejected,
+    },
+  }).catch(() => undefined);
+
   return { uploaded, rejected };
 }
 
@@ -747,6 +769,12 @@ export async function deleteRepositoryFile(input: {
       commitLiteId: commit.id,
     },
   });
+
+  await dispatchRepositoryWebhooks({
+    repositoryId: input.repositoryId,
+    event: "file.deleted",
+    payload: { path: repoPath, message: input.message || null },
+  }).catch(() => undefined);
 }
 
 export async function readRepositoryFileText(repositoryFileId: string) {

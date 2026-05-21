@@ -6,8 +6,11 @@ export function isSameOriginRequest(request: Request) {
   }
 
   const origin = request.headers.get("origin");
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-  const proto = request.headers.get("x-forwarded-proto") || new URL(request.url).protocol.replace(":", "");
+  const requestUrl = new URL(request.url);
+  const trustProxyHeaders = process.env.TRUST_PROXY_HEADERS === "true";
+  const host = request.headers.get("host") || requestUrl.host;
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const proto = trustProxyHeaders && (forwardedProto === "https" || forwardedProto === "http") ? forwardedProto : requestUrl.protocol.replace(":", "");
 
   if (!origin || !host) {
     return false;
