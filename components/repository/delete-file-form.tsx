@@ -4,6 +4,7 @@ import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/system/preferences-provider";
 import { deleteFileAction, type RepoFormState } from "@/lib/repository/actions";
+import { translateMessage } from "@/lib/i18n/messages";
 
 type DeleteFileFormProps = {
   repositoryId: string;
@@ -34,7 +35,7 @@ export function DeleteFileForm({ repositoryId, path, redirectTo, compact = false
     <form action={formAction} className={compact ? "grid gap-1" : "flex items-center gap-2"}>
       <input name="path" type="hidden" value={path} />
       <input name="message" type="hidden" value={`Delete ${path}`} />
-      {state.message && !state.ok ? <p className="text-sm text-secondary">{state.message}</p> : null}
+      {state.message && !state.ok ? <p className="text-sm text-secondary">{translateMessage(t, state.message)}</p> : null}
       <button
         className={
           compact

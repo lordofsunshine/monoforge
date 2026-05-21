@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import type { FormState } from "@/lib/auth/actions";
 import { useI18n } from "@/components/system/preferences-provider";
+import { translateMessage } from "@/lib/i18n/messages";
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -85,7 +86,7 @@ export function AuthForm({ mode, action, googleEnabled = false, googleAction }: 
       </div>
       {state.message ? (
         <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary" role="status">
-          {state.message}
+          {translateMessage(t, state.message)}
         </p>
       ) : null}
       <button

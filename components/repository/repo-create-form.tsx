@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createRepositoryAction, type RepoFormState } from "@/lib/repository/actions";
 import { useI18n } from "@/components/system/preferences-provider";
+import { translateMessage } from "@/lib/i18n/messages";
 
 const initialState: RepoFormState = {
   ok: false,
@@ -40,7 +41,7 @@ export function RepoCreateForm() {
         <input className="size-4 accent-foreground" name="initializeWithReadme" type="checkbox" />
         {t("repoForm.initializeReadme")}
       </label>
-      {state.message ? <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary">{state.message}</p> : null}
+      {state.message ? <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary">{translateMessage(t, state.message)}</p> : null}
       <button className="mf-primary inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium disabled:opacity-40" disabled={pending} type="submit">
         {pending ? t("common.creating") : t("repoForm.createRepository")}
       </button>

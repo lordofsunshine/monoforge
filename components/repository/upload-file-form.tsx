@@ -3,6 +3,7 @@
 import { ChangeEvent, DragEvent, FormEvent, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/components/system/preferences-provider";
+import { translateMessage } from "@/lib/i18n/messages";
 
 type UploadFileFormProps = {
   owner: string;
@@ -180,7 +181,7 @@ export function UploadFileForm({ owner, repo }: UploadFileFormProps) {
         setStatus({
           done: 0,
           total: items.length,
-          message: error instanceof Error ? error.message : t("upload.failed"),
+          message: error instanceof Error ? translateMessage(t, error.message) : t("upload.failed"),
           rejected: [],
         });
         return;

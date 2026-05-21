@@ -1,4 +1,4 @@
-export function PreferenceScript() {
+export function PreferenceScript({ nonce }: { nonce?: string | null }) {
   const code = `
 (function(){
   try {
@@ -13,5 +13,5 @@ export function PreferenceScript() {
 })();
 `;
 
-  return <script dangerouslySetInnerHTML={{ __html: code }} />;
+  return <script nonce={nonce ?? undefined} dangerouslySetInnerHTML={{ __html: code }} />;
 }

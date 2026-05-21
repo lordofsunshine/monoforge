@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { deleteRepositoryAction, updateRepositoryAction, type RepoFormState } from "@/lib/repository/actions";
 import { useI18n } from "@/components/system/preferences-provider";
+import { translateMessage } from "@/lib/i18n/messages";
 
 type RepoSettingsFormProps = {
   repositoryId: string;
@@ -46,7 +47,7 @@ export function RepoSettingsForm({ repositoryId, name, description, visibility }
             <option value="PRIVATE">{t("common.private")}</option>
           </select>
         </div>
-        {state.message ? <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary">{state.message}</p> : null}
+        {state.message ? <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary">{translateMessage(t, state.message)}</p> : null}
         <div>
           <button className="mf-primary inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium disabled:opacity-40" disabled={pending} type="submit">
             {pending ? t("common.saving") : t("repoForm.saveSettings")}

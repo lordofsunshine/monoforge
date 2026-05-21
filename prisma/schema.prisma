@@ -80,6 +80,17 @@ enum ApiTokenStatus {
   REVOKED
 }
 
+enum WebhookStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+}
+
 enum AuditAction {
   DELETE_REPOSITORY
   CHANGE_REPOSITORY_VISIBILITY
@@ -189,6 +200,7 @@ model Repository {
   commits  CommitLite[]
   activity RepoActivity[]
   views    RepoView[]
+  webhooks Webhook[]
 
   @@unique([ownerId, name])
   @@unique([ownerId, slug])
@@ -480,6 +492,46 @@ model ApiToken {
 
   @@index([userId])
   @@index([prefix])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Webhook {
+  id           String        @id @default(cuid())
+  repositoryId String
+  url          String
+  secret       String
+  events       String[]      @default(["*"])
+  status       WebhookStatus @default(ACTIVE)
+  lastStatus   Int?
+  lastError    String?
+  lastSentAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  repository Repository        @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([repositoryId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model WebhookDelivery {
+  id          String                @id @default(cuid())
+  webhookId   String
+  event       String
+  payload     Json
+  status      WebhookDeliveryStatus @default(PENDING)
+  statusCode  Int?
+  error       String?
+  deliveredAt DateTime?
+  createdAt   DateTime              @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([event])
   @@index([status])
   @@index([createdAt])
 }

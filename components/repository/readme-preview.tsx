@@ -45,7 +45,7 @@ export function ReadmePreview({ content, createHref, owner, repo, sourcePath }: 
       const payload = (await response.json()) as { markdown?: string; error?: string };
 
       if (!response.ok || !payload.markdown) {
-        throw new Error(payload.error || "Translation failed");
+        throw new Error(payload.error || t("errors.translationFailed"));
       }
 
       setTranslatedContent(payload.markdown);

@@ -5,6 +5,7 @@ import type { IssueBoardStatus, IssueLabel, IssuePriority } from "@/generated/pr
 import type { IssueFormState } from "@/lib/issues/actions";
 import { LabelBadge } from "@/components/issues/label-badge";
 import { useI18n } from "@/components/system/preferences-provider";
+import { translateMessage } from "@/lib/i18n/messages";
 
 type IssueFormProps = {
   action: (state: IssueFormState, formData: FormData) => Promise<IssueFormState>;
@@ -86,7 +87,7 @@ export function IssueForm({ action, labels, defaults, submitLabel }: IssueFormPr
           </p>
         </>
       ) : null}
-      {state.message ? <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary">{state.message}</p> : null}
+      {state.message ? <p className="rounded-md border border-line bg-subtle px-3 py-2 text-sm text-secondary">{translateMessage(t, state.message)}</p> : null}
       <button className="mf-primary inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium disabled:opacity-40" disabled={pending} type="submit">
         {pending ? t("common.working") : submitLabel.includes(".") ? t(submitLabel) : submitLabel}
       </button>
