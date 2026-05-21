@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { auth } from "@/auth";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { CommandPalette } from "@/components/command-palette/command-palette";
@@ -114,17 +115,18 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const [session, headerStore] = await Promise.all([auth(), headers()]);
+  const nonce = headerStore.get("x-nonce");
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
-        <PreferenceScript />
+        <PreferenceScript nonce={nonce} />
       </head>
       <body className="min-h-dvh bg-background text-foreground antialiased">
         <PreferencesProvider>
           <RouteLineLoader />
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+          <script nonce={nonce ?? undefined} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
           <header className="sticky top-0 z-40 bg-transparent px-4 py-3">
             <div className="mx-auto flex min-h-20 w-full max-w-[1408px] flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-background/[0.92] py-2 pl-4 pr-4 shadow-2xl shadow-black/[0.08] backdrop-blur md:flex-nowrap md:pr-6 lg:pr-8">
               <Link href="/" className="font-mono text-sm font-semibold tracking-normal">

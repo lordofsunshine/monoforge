@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { LocalizedCount } from "@/components/system/localized-format";
+import { LocalizedText } from "@/components/system/localized-text";
 import { RepositoryVisibility } from "@/generated/prisma/client";
 import { formatBytes } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
@@ -12,12 +13,12 @@ export default async function CurrentUserStarsPage() {
     return (
       <section className="grid gap-6">
         <header className="border-b border-line pb-5">
-          <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">stars</p>
-          <h1 className="mt-2 text-2xl font-semibold">Starred repositories</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary">Log in to see repositories you have starred.</p>
+          <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary"><LocalizedText path="starsPage.eyebrow" /></p>
+          <h1 className="mt-2 text-2xl font-semibold"><LocalizedText path="starsPage.title" /></h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary"><LocalizedText path="starsPage.loginDescription" /></p>
         </header>
         <Link className="mf-primary w-fit rounded-md border px-4 py-2 text-sm font-medium" href="/login?next=%2Fstars">
-          Login
+          <LocalizedText path="nav.login" />
         </Link>
       </section>
     );
@@ -52,8 +53,8 @@ export default async function CurrentUserStarsPage() {
   return (
     <section className="grid gap-6">
       <header className="border-b border-line pb-5">
-        <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">stars</p>
-        <h1 className="mt-2 text-2xl font-semibold">Starred repositories</h1>
+        <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary"><LocalizedText path="starsPage.eyebrow" /></p>
+        <h1 className="mt-2 text-2xl font-semibold"><LocalizedText path="starsPage.title" /></h1>
       </header>
       <div className="overflow-hidden rounded-lg border border-line bg-surface">
         {stars.length ? (
@@ -78,7 +79,7 @@ export default async function CurrentUserStarsPage() {
             </Link>
           ))
         ) : (
-          <div className="px-4 py-12 text-center text-sm text-secondary">No starred repositories yet.</div>
+          <div className="px-4 py-12 text-center text-sm text-secondary"><LocalizedText path="profile.noStarredRepos" /></div>
         )}
       </div>
     </section>

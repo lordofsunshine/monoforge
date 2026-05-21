@@ -2,6 +2,7 @@ import { ProfileForm } from "@/components/settings/profile-form";
 import { LocalizedText } from "@/components/system/localized-text";
 import { requireUser } from "@/lib/auth/access";
 import { getPrisma } from "@/lib/prisma";
+import { TokenManager } from "@/app/settings/token-manager";
 
 export default async function ProfileSettingsPage() {
   const sessionUser = await requireUser();
@@ -15,9 +16,14 @@ export default async function ProfileSettingsPage() {
       email: true,
     },
   });
+  const tokens = await prisma.apiToken.findMany({
+    where: { userId: sessionUser.id },
+    select: { id: true, name: true, prefix: true, scopes: true, status: true, lastUsedAt: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
-    <section className="grid w-full max-w-2xl gap-6">
+    <section className="grid w-full max-w-3xl gap-6">
       <div className="border-b border-line pb-5">
         <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">
           <LocalizedText path="settings.eyebrow" />
@@ -30,6 +36,11 @@ export default async function ProfileSettingsPage() {
       <div className="rounded-lg border border-line bg-surface p-5">
         <ProfileForm username={user.username} bio={user.bio || ""} image={user.image || ""} />
       </div>
+      <TokenManager tokens={tokens.map((token) => ({
+        ...token,
+        lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
+        createdAt: token.createdAt.toISOString(),
+      }))} />
     </section>
   );
 }

@@ -6,6 +6,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { formatBytes } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { getStorageRoot } from "@/server/storage/paths";
+import { LocalizedText } from "@/components/system/localized-text";
 
 async function directorySize(dir: string): Promise<bigint> {
   const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
@@ -58,30 +59,30 @@ export default async function AdminPage() {
   ]);
 
   const cards = [
-    ["Users", users.toString()],
-    ["Repositories", repositories.toString()],
-    ["Public repos", publicRepositories.toString()],
-    ["Private repos", privateRepositories.toString()],
-    ["Files", files.toString()],
-    ["Issues", issues.toString()],
-    ["Stars", stars.toString()],
-    ["Storage", formatBytes(storageBytes)],
-    ["Database", formatBytes(dbSize)],
-    ["Total footprint", formatBytes(storageBytes + dbSize)],
+    ["admin.users", users.toString()],
+    ["admin.repositories", repositories.toString()],
+    ["admin.publicRepos", publicRepositories.toString()],
+    ["admin.privateRepos", privateRepositories.toString()],
+    ["admin.files", files.toString()],
+    ["admin.issues", issues.toString()],
+    ["admin.stars", stars.toString()],
+    ["admin.storage", formatBytes(storageBytes)],
+    ["admin.database", formatBytes(dbSize)],
+    ["admin.totalFootprint", formatBytes(storageBytes + dbSize)],
   ];
 
   return (
     <section className="grid gap-6">
       <header className="border-b border-line pb-5">
-        <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">admin</p>
-        <h1 className="mt-2 text-2xl font-semibold">Service overview</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary">Read-only service metrics for MonoForge. Destructive actions are not available here.</p>
+        <p className="font-mono text-xs uppercase tracking-[0.14em] text-secondary"><LocalizedText path="admin.eyebrow" /></p>
+        <h1 className="mt-2 text-2xl font-semibold"><LocalizedText path="admin.title" /></h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary"><LocalizedText path="admin.description" /></p>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map(([label, value]) => (
           <section className="rounded-lg border border-line bg-surface p-4" key={label}>
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">{label}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint"><LocalizedText path={label} /></p>
             <p className="mt-3 truncate text-2xl font-semibold">{value}</p>
           </section>
         ))}
@@ -89,7 +90,7 @@ export default async function AdminPage() {
 
       <section className="overflow-hidden rounded-lg border border-line bg-surface">
         <div className="border-b border-line bg-subtle px-4 py-3">
-          <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-secondary">latest audit events</h2>
+          <h2 className="font-mono text-xs uppercase tracking-[0.14em] text-secondary"><LocalizedText path="admin.latestAuditEvents" /></h2>
         </div>
         {auditLogs.length ? (
           auditLogs.map((item) => (
@@ -100,7 +101,7 @@ export default async function AdminPage() {
             </div>
           ))
         ) : (
-          <div className="px-4 py-12 text-center text-sm text-secondary">No audit events yet.</div>
+          <div className="px-4 py-12 text-center text-sm text-secondary"><LocalizedText path="admin.noAuditEvents" /></div>
         )}
       </section>
     </section>
