@@ -13,5 +13,5 @@ export function PreferenceScript({ nonce }: { nonce?: string | null }) {
 })();
 `;
 
-  return <script nonce={nonce ?? undefined} dangerouslySetInnerHTML={{ __html: code }} />;
+  return <script nonce={nonce ?? undefined}>{code}</script>;
 }

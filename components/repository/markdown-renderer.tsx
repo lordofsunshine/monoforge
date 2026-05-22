@@ -1,6 +1,8 @@
 import { Children, cloneElement, isValidElement, type ReactNode } from "react";
+import type { Html, Image, Root } from "mdast";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { visit } from "unist-util-visit";
 
 type MarkdownRendererProps = {
   content: string | null | undefined;
@@ -34,23 +36,6 @@ function normalizeRelativePath(input: string, sourcePath?: string | null) {
   }
 
   return output.join("/");
-}
-
-function markdownWithSafeImages(content: string) {
-  return content.replace(/<img\s+([^>]*?)\/?>/gi, (_match, attributes: string) => {
-    if (/\son[a-z]+\s*=/i.test(attributes)) {
-      return _match;
-    }
-
-    const src = /src\s*=\s*["']([^"']+)["']/i.exec(attributes)?.[1];
-    const alt = /alt\s*=\s*["']([^"']*)["']/i.exec(attributes)?.[1] || "image";
-
-    if (!src) {
-      return "";
-    }
-
-    return `![${alt.replaceAll("[", "").replaceAll("]", "")}](${src})`;
-  });
 }
 
 function isUnsafeUrl(value: string) {
@@ -111,6 +96,137 @@ function safeImageSrc(src: string | undefined, owner?: string, repo?: string, so
 
   const repoPath = normalizeRelativePath(trimmed, sourcePath);
   return `/api/repositories/${owner}/${repo}/raw/${encodeRepoPath(repoPath)}`;
+}
+
+function looksLikeImageTag(value: string) {
+  const input = value.trimStart();
+  if (!input.toLowerCase().startsWith("<img")) {
+    return false;
+  }
+
+  const next = input[4];
+  return next === undefined || /\s|\/|>/u.test(next);
+}
+
+function readHtmlImageTag(value: string) {
+  const input = value.trim();
+
+  if (!looksLikeImageTag(input)) {
+    return null;
+  }
+
+  let index = 4;
+  const attributes = new Map<string, string>();
+
+  while (index < input.length) {
+    while (/\s/u.test(input[index] || "")) {
+      index += 1;
+    }
+
+    const char = input[index];
+
+    if (char === ">") {
+      index += 1;
+      break;
+    }
+
+    if (char === "/" && input[index + 1] === ">") {
+      index += 2;
+      break;
+    }
+
+    const nameStart = index;
+    while (/[a-zA-Z0-9:_-]/u.test(input[index] || "")) {
+      index += 1;
+    }
+
+    if (nameStart === index) {
+      return null;
+    }
+
+    const name = input.slice(nameStart, index).toLowerCase();
+
+    while (/\s/u.test(input[index] || "")) {
+      index += 1;
+    }
+
+    let attrValue = "";
+
+    if (input[index] === "=") {
+      index += 1;
+
+      while (/\s/u.test(input[index] || "")) {
+        index += 1;
+      }
+
+      const quote = input[index];
+
+      if (quote === '"' || quote === "'") {
+        index += 1;
+        const valueStart = index;
+        while (index < input.length && input[index] !== quote) {
+          index += 1;
+        }
+
+        if (input[index] !== quote) {
+          return null;
+        }
+
+        attrValue = input.slice(valueStart, index);
+        index += 1;
+      } else {
+        const valueStart = index;
+        while (index < input.length && !/\s|\/|>/u.test(input[index] || "")) {
+          index += 1;
+        }
+        attrValue = input.slice(valueStart, index);
+      }
+    }
+
+    if (name.startsWith("on")) {
+      return null;
+    }
+
+    attributes.set(name, attrValue);
+  }
+
+  if (input.slice(index).trim()) {
+    return null;
+  }
+
+  const src = attributes.get("src")?.trim();
+
+  if (!src || isUnsafeUrl(src)) {
+    return null;
+  }
+
+  return {
+    src,
+    alt: attributes.get("alt") || "image",
+  };
+}
+
+function remarkSafeHtmlImages() {
+  return (tree: Root) => {
+    visit(tree, "html", (node: Html, index, parent) => {
+      if (typeof index !== "number" || !parent || !looksLikeImageTag(node.value)) {
+        return;
+      }
+
+      const image = readHtmlImageTag(node.value);
+
+      if (!image) {
+        parent.children.splice(index, 1);
+        return;
+      }
+
+      parent.children[index] = {
+        type: "image",
+        url: image.src,
+        alt: image.alt,
+      } satisfies Image;
+    });
+  };
 }
 
 function textFromNode(node: ReactNode): string {
@@ -194,12 +310,10 @@ export function MarkdownRenderer({ content, empty = "", owner, repo, sourcePath,
     return <p className="text-sm text-faint">{empty}</p>;
   }
 
-  const safeContent = allowHtmlImages ? markdownWithSafeImages(content) : content;
-
   return (
     <div className="mf-markdown max-w-none text-sm leading-7 text-secondary">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={allowHtmlImages ? [remarkGfm, remarkSafeHtmlImages] : [remarkGfm]}
         components={{
           h1: ({ children }) => <h1 className="mb-4 border-b border-line pb-3 text-2xl font-semibold text-foreground">{children}</h1>,
           h2: ({ children }) => <h2 className="mb-3 mt-6 text-xl font-semibold text-foreground">{children}</h2>,
@@ -253,7 +367,7 @@ export function MarkdownRenderer({ content, empty = "", owner, repo, sourcePath,
           hr: () => <hr className="my-6 border-line" />,
         }}
       >
-        {safeContent}
+        {content}
       </ReactMarkdown>
     </div>
   );
