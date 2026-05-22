@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Markdown } from "@/components/issues/markdown";
+import { MarkdownRenderer } from "@/components/repository/markdown-renderer";
 
 describe("issue markdown rendering", () => {
   it("does not render raw script tags", () => {
@@ -30,5 +31,20 @@ describe("issue markdown rendering", () => {
     expect(html).toContain("WARNING");
     expect(html).toContain("Check this before upload.");
     expect(html).not.toContain("[!WARNING]");
+  });
+
+  it("renders safe repository html images without preserving raw event handler text", () => {
+    const html = renderToStaticMarkup(<MarkdownRenderer content={'<img alt="Logo" src="docs/logo.png">'} owner="alice" repo="mono" sourcePath="README.md" allowHtmlImages />);
+
+    expect(html).toContain("<img");
+    expect(html).toContain("/api/repositories/alice/mono/raw/docs/logo.png");
+  });
+
+  it("drops malformed html image payloads instead of leaking attacker attributes", () => {
+    const html = renderToStaticMarkup(<MarkdownRenderer content={'<img alt="x >" src="docs/logo.png" onerror="alert(1)">'} owner="alice" repo="mono" sourcePath="README.md" allowHtmlImages />);
+
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("alert(1)");
+    expect(html).not.toContain("<img");
   });
 });

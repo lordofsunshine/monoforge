@@ -2,7 +2,7 @@ import { createReadStream, createWriteStream } from "node:fs";
 import { copyFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { pipeline } from "node:stream/promises";
-import type { Writable } from "node:stream";
+import { Transform, type Writable } from "node:stream";
 import { getEnv } from "@/lib/env";
 
 const zstdTextExtensions = new Set(["md", "mdx", "json", "js", "jsx", "ts", "tsx", "css", "scss", "html", "txt", "yaml", "yml", "xml", "csv", "toml", "sql", "prisma"]);
@@ -68,7 +68,24 @@ export async function compressWithZstd(inputPath: string, outputPath: string) {
   await runZstd(["-q", `-${env.ZSTD_LEVEL}`, "-f", "-o", outputPath, inputPath], inputPath, outputPath);
 }
 
-export async function decompressWithZstd(inputPath: string, outputStream: Writable) {
+export function createDecompressionLimitStream(maxBytes: number) {
+  let written = 0;
+
+  return new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      written += chunk.length;
+
+      if (written > maxBytes) {
+        callback(new Error("Decompressed output exceeds allowed size"));
+        return;
+      }
+
+      callback(null, chunk);
+    },
+  });
+}
+
+export async function decompressWithZstd(inputPath: string, outputStream: Writable, maxOutputBytes?: number) {
   const env = getEnv();
   const child = spawn("zstd", ["-q", "-d", "-c", inputPath], {
     stdio: ["ignore", "pipe", "pipe"],
@@ -79,8 +96,10 @@ export async function decompressWithZstd(inputPath: string, outputStream: Writab
   child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
 
   try {
+    const output = typeof maxOutputBytes === "number" ? pipeline(child.stdout, createDecompressionLimitStream(maxOutputBytes), outputStream) : pipeline(child.stdout, outputStream);
+
     await Promise.all([
-      pipeline(child.stdout, outputStream),
+      output,
       new Promise<void>((resolve, reject) => {
         child.on("error", reject);
         child.on("close", (code) => {
@@ -95,6 +114,7 @@ export async function decompressWithZstd(inputPath: string, outputStream: Writab
     ]);
   } finally {
     clearTimeout(timer);
+    child.kill("SIGKILL");
   }
 }
 

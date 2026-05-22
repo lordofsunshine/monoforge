@@ -1,6 +1,8 @@
+import { Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { getRawResponsePolicy, safeDownloadFileName, shouldBlockPreview } from "@/lib/security/file-policy";
-import { shouldCompress } from "@/server/storage/compression";
+import { shouldAllowArchiveDownload } from "@/server/repositories/archive-policy";
+import { createDecompressionLimitStream, shouldCompress } from "@/server/storage/compression";
 import { getPrimaryBlobKey } from "@/server/storage/paths";
 
 describe("storage policy", () => {
@@ -42,5 +44,32 @@ describe("storage policy", () => {
 
   it("sanitizes download filenames", () => {
     expect(safeDownloadFileName("../bad\r\nname.html")).toBe(".._badname.html");
+  });
+
+  it("stops decompression output once the declared size is exceeded", async () => {
+    const chunks: Buffer[] = [];
+    const sink = new Writable({
+      write(chunk: Buffer, _encoding, callback) {
+        chunks.push(Buffer.from(chunk));
+        callback();
+      },
+    });
+    const limit = createDecompressionLimitStream(5);
+    limit.pipe(sink);
+
+    await expect(
+      new Promise<void>((resolve, reject) => {
+        limit.on("error", reject);
+        sink.on("finish", resolve);
+        limit.end(Buffer.from("123456"));
+      }),
+    ).rejects.toThrow("Decompressed output exceeds allowed size");
+    expect(Buffer.concat(chunks).length).toBeLessThanOrEqual(5);
+  });
+
+  it("rejects archive downloads beyond the archive budget", () => {
+    expect(shouldAllowArchiveDownload({ fileCount: 200, totalSize: 30 * 1024 * 1024 })).toBe(true);
+    expect(shouldAllowArchiveDownload({ fileCount: 1001, totalSize: 30 * 1024 * 1024 })).toBe(false);
+    expect(shouldAllowArchiveDownload({ fileCount: 200, totalSize: 201 * 1024 * 1024 })).toBe(false);
   });
 });

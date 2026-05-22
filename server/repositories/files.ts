@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { writeFile, rm } from "node:fs/promises";
 import { Writable } from "node:stream";
 import { ActivityType, FileKind, RepositoryVisibility } from "@/generated/prisma/client";
@@ -207,11 +208,11 @@ export async function upsertRepositoryFile(input: {
   buffer: Buffer;
   message?: string;
 }) {
-  const tmpPath = getStoragePath(`tmp/${input.authorId}-${Date.now()}.buffer-upload`);
+  const tmpPath = getStoragePath(`tmp/${input.authorId}-${randomUUID()}.buffer-upload`);
   await ensureStorageDirs();
-  await writeFile(tmpPath, input.buffer);
 
   try {
+    await writeFile(tmpPath, input.buffer);
     return await upsertRepositoryFileFromTemp({
       repositoryId: input.repositoryId,
       authorId: input.authorId,
@@ -221,9 +222,8 @@ export async function upsertRepositoryFile(input: {
       byteSize: input.buffer.length,
       message: input.message,
     });
-  } catch (error) {
+  } finally {
     await rm(tmpPath, { force: true });
-    throw error;
   }
 }
 

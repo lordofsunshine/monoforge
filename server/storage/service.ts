@@ -56,7 +56,12 @@ export async function writeUploadToTemp(input: Readable, userId: string, maxByte
     }
   });
 
-  await pipeline(input, counter, createWriteStream(tmpPath));
+  try {
+    await pipeline(input, counter, createWriteStream(tmpPath));
+  } catch (error) {
+    await rm(tmpPath, { force: true });
+    throw error;
+  }
 
   return {
     tmpPath,
@@ -267,11 +272,19 @@ export async function deleteBlobIfUnused(hash: string) {
   return true;
 }
 
-export async function streamBlobToOutput(blob: { storageKey: string; compressionType: CompressionType }, outputStream: Writable) {
+function readableSizeLimit(value?: bigint | number | null) {
+  if (typeof value === "bigint") {
+    return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : undefined;
+  }
+
+  return typeof value === "number" ? value : undefined;
+}
+
+export async function streamBlobToOutput(blob: { storageKey: string; compressionType: CompressionType; originalSize?: bigint | number | null }, outputStream: Writable) {
   const inputPath = getStoragePath(blob.storageKey);
 
   if (blob.compressionType === CompressionType.ZSTD) {
-    await decompressWithZstd(inputPath, outputStream);
+    await decompressWithZstd(inputPath, outputStream, readableSizeLimit(blob.originalSize));
     return;
   }
 

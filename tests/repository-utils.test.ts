@@ -22,6 +22,10 @@ describe("repository utilities", () => {
     expect(() => assertAllowedExtension("plugin.jar")).not.toThrow();
     expect(() => assertAllowedExtension(".env")).toThrow();
     expect(() => assertAllowedExtension("keys/private.pem")).toThrow();
+    expect(() => assertAllowedExtension(".aws/credentials")).toThrow();
+    expect(() => assertAllowedExtension(".bash_history")).toThrow();
+    expect(() => assertAllowedExtension(".env.backup")).toThrow();
+    expect(() => assertAllowedExtension("secrets/api.key.txt")).toThrow();
   });
 
   it("creates deterministic fingerprints", () => {
