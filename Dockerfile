@@ -27,7 +27,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/generated ./generated
+COPY --from=builder --chown=nextjs:nodejs /app/server ./server
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+RUN npm install tsx@^4.21.0 --no-save && chown -R nextjs:nodejs /app/node_modules
 RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage
 USER nextjs
 EXPOSE 3000

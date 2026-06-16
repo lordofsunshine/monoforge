@@ -1,33 +1,12 @@
 import { FileKind } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
+import { labelRepositoryLanguage, resolveRepositoryLanguage } from "@/lib/repository/languages";
 
 export type RepositoryLanguageStat = {
   language: string;
   bytes: number;
   percent: number;
 };
-
-function labelLanguage(language: string) {
-  const labels: Record<string, string> = {
-    javascript: "JavaScript",
-    typescript: "TypeScript",
-    ts: "TypeScript",
-    markdown: "Markdown",
-    json: "JSON",
-    html: "HTML",
-    css: "CSS",
-    scss: "SCSS",
-    yaml: "YAML",
-    bash: "Shell",
-    powershell: "PowerShell",
-    prisma: "Prisma",
-    sql: "SQL",
-    tsx: "TSX",
-    jsx: "JSX",
-  };
-
-  return labels[language.toLowerCase()] || language;
-}
 
 export function calculateRepositoryLanguages(files: Array<{ language: string | null; size: bigint | number }>): RepositoryLanguageStat[] {
   const totals = new Map<string, number>();
@@ -37,7 +16,7 @@ export function calculateRepositoryLanguages(files: Array<{ language: string | n
       continue;
     }
 
-    const language = labelLanguage(file.language);
+    const language = labelRepositoryLanguage(file.language);
     totals.set(language, (totals.get(language) ?? 0) + Number(file.size));
   }
 
@@ -55,7 +34,7 @@ export function calculateRepositoryLanguages(files: Array<{ language: string | n
       remainder: (bytes / totalBytes) * 100 - Math.floor((bytes / totalBytes) * 100),
     }))
     .sort((left, right) => right.bytes - left.bytes)
-    .slice(0, 6);
+    .slice(0, 8);
   let remaining = Math.max(0, 100 - stats.reduce((sum, item) => sum + item.percent, 0));
 
   for (const item of [...stats].sort((left, right) => right.remainder - left.remainder)) {
@@ -75,15 +54,20 @@ export async function getRepositoryLanguages(repositoryId: string): Promise<Repo
     where: {
       repositoryId,
       kind: FileKind.FILE,
-      isBinary: false,
-      language: { not: null },
     },
     select: {
+      path: true,
+      extension: true,
       language: true,
       size: true,
     },
-    take: 2000,
+    orderBy: { path: "asc" },
   });
 
-  return calculateRepositoryLanguages(files);
+  return calculateRepositoryLanguages(
+    files.map((file) => ({
+      language: resolveRepositoryLanguage(file.path, file.extension, file.language),
+      size: file.size,
+    })),
+  );
 }

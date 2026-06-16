@@ -21,6 +21,7 @@
     "cleanup:tmp": "tsx scripts/cleanup-tmp.ts",
     "cleanup:orphan-blobs": "tsx scripts/cleanup-orphan-blobs.ts",
     "cleanup:worker": "tsx scripts/gc-worker.ts",
+    "mirror:worker": "tsx scripts/mirror-worker.ts",
     "storage:cleanup": "tsx scripts/cleanup-orphan-blobs.ts",
     "storage:stats": "tsx scripts/storage-stats.ts"
   },
@@ -44,6 +45,7 @@
     "remark-stringify": "^11.0.0",
     "sharp": "^0.34.5",
     "shiki": "^4.0.2",
+    "tar-stream": "^3.2.0",
     "translate": "^3.0.1",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
@@ -56,6 +58,7 @@
     "@types/mime-types": "^3.0.1",
     "@types/node": "^25.7.0",
     "@types/react-dom": "^19.2.3",
+    "@types/tar-stream": "^3.1.4",
     "@vitejs/plugin-react": "^6.0.1",
     "postcss": "^8.5.14",
     "prisma": "^7.8.0",

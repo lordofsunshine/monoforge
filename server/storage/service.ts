@@ -8,6 +8,7 @@ import { lookup } from "mime-types";
 import { CompressionType, FileVariantKind, StorageBackend } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { getRepoExtension } from "@/lib/repository/paths";
+import { isRepositoryCodeExtension } from "@/lib/repository/languages";
 import { compressWithZstd, copyStoredFile, decompressWithZstd, shouldCompress, streamStoredFile } from "@/server/storage/compression";
 import { generateThumbnail, isOptimizableImage, optimizeImageWithSharp } from "@/server/storage/images";
 import { enforceQuota } from "@/server/storage/limits";
@@ -71,6 +72,10 @@ export async function writeUploadToTemp(input: Readable, userId: string, maxByte
 
 export function isProbablyBinaryByName(mimeType: string, extension: string | null) {
   if (mimeType.startsWith("text/")) {
+    return false;
+  }
+
+  if (isRepositoryCodeExtension(extension)) {
     return false;
   }
 

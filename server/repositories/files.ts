@@ -4,6 +4,7 @@ import { Writable } from "node:stream";
 import { ActivityType, FileKind, RepositoryVisibility } from "@/generated/prisma/client";
 import { getPrisma } from "@/lib/prisma";
 import { assertAllowedExtension, getDirectoryPaths, getParentPath, getRepoExtension, getRepoFileName, normalizeRepoPath } from "@/lib/repository/paths";
+import { isRepositoryCodeExtension, isRepositoryCodePath, languageFromRepoPath } from "@/lib/repository/languages";
 import { ensureStorageDirs, getStoragePath } from "@/server/storage/paths";
 import { deleteBlobIfUnused, saveBlob, streamBlobToOutput } from "@/server/storage/service";
 import { dispatchRepositoryWebhooks } from "@/server/storage/webhooks";
@@ -85,13 +86,51 @@ export function isMarkdownPath(repoPath: string) {
   return extension === "md" || extension === "mdx";
 }
 
-export function isTextLike(repoPath: string, mimeType: string | null, isBinary: boolean) {
-  if (isBinary) {
+const nonTextMimePrefixes = ["image/", "audio/", "video/", "font/"];
+const nonTextMimeTypes = new Set([
+  "application/pdf",
+  "application/zip",
+  "application/gzip",
+  "application/x-gzip",
+  "application/x-tar",
+  "application/x-7z-compressed",
+  "application/x-rar-compressed",
+  "application/vnd.rar",
+  "application/x-bzip2",
+  "application/x-xz",
+  "application/wasm",
+  "application/octet-stream-binary",
+  "application/x-msdownload",
+  "application/x-sharedlib",
+  "application/x-executable",
+  "application/java-archive",
+]);
+
+export function isPreviewableTextMime(mimeType: string | null) {
+  if (!mimeType) {
+    return true;
+  }
+
+  const normalized = mimeType.split(";")[0]?.trim().toLowerCase() || "";
+
+  if (nonTextMimePrefixes.some((prefix) => normalized.startsWith(prefix))) {
     return false;
+  }
+
+  return !nonTextMimeTypes.has(normalized);
+}
+
+export function isTextLike(repoPath: string, mimeType: string | null, isBinary: boolean) {
+  if (isRepositoryCodeExtension(getRepoExtension(repoPath)) || isRepositoryCodePath(repoPath)) {
+    return true;
   }
 
   if (mimeType?.startsWith("text/")) {
     return true;
+  }
+
+  if (isBinary) {
+    return false;
   }
 
   const extension = getRepoExtension(repoPath);
@@ -99,29 +138,7 @@ export function isTextLike(repoPath: string, mimeType: string | null, isBinary: 
 }
 
 export function languageFromPath(repoPath: string) {
-  const extension = getRepoExtension(repoPath);
-  const map: Record<string, string> = {
-    ts: "typescript",
-    tsx: "tsx",
-    js: "javascript",
-    jsx: "jsx",
-    css: "css",
-    scss: "scss",
-    html: "html",
-    json: "json",
-    md: "markdown",
-    mdx: "markdown",
-    yaml: "yaml",
-    yml: "yaml",
-    toml: "toml",
-    xml: "xml",
-    sql: "sql",
-    prisma: "prisma",
-    sh: "bash",
-    ps1: "powershell",
-  };
-
-  return extension ? map[extension] || extension : null;
+  return languageFromRepoPath(repoPath);
 }
 
 export async function ensureRepoWritable(repositoryId: string, userId: string) {
@@ -788,11 +805,11 @@ export async function readRepositoryFileText(repositoryFileId: string) {
     throw new Error("File not found");
   }
 
-  if (!isTextLike(file.path, file.mimeType, file.isBinary)) {
+  if (Number(file.size) > textPreviewLimit) {
     return null;
   }
 
-  if (Number(file.size) > textPreviewLimit) {
+  if (!isPreviewableTextMime(file.mimeType)) {
     return null;
   }
 
@@ -804,5 +821,11 @@ export async function readRepositoryFileText(repositoryFileId: string) {
     },
   });
   await streamBlobToOutput(file.blob, sink);
-  return Buffer.concat(chunks).toString("utf8");
+  const buffer = Buffer.concat(chunks);
+
+  if (isBinaryBuffer(buffer)) {
+    return null;
+  }
+
+  return buffer.toString("utf8");
 }

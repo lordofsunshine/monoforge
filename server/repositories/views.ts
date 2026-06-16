@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { getPrisma } from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIpFromHeaders } from "@/lib/security/client-ip";
+import { rateLimitProfiles } from "@/lib/security/rate-limit";
 
 function getMonthStart(date = new Date()) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
@@ -12,10 +15,16 @@ function hashViewer(input: string) {
 
 export async function recordRepositoryView(repositoryId: string, viewerUserId?: string | null) {
   const headerStore = await headers();
-  const forwardedFor = headerStore.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = headerStore.get("x-real-ip")?.trim();
-  const ip = forwardedFor || realIp || "local";
+  const ip = getClientIpFromHeaders(headerStore) || "local";
   const userAgent = headerStore.get("user-agent") || "unknown";
+
+  const throttleKey = viewerUserId ? `view:user:${viewerUserId}` : `view:ip:${ip}`;
+  const allowance = checkRateLimit(throttleKey, rateLimitProfiles.view.limit, rateLimitProfiles.view.windowMs);
+
+  if (!allowance.allowed) {
+    return;
+  }
+
   const viewerHash = viewerUserId ? hashViewer(`user:${viewerUserId}`) : hashViewer(`anon:${ip}:${userAgent}`);
   const month = getMonthStart();
 

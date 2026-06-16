@@ -53,6 +53,12 @@ services:
       - "127.0.0.1:${APP_PORT:-3102}:3000"
     volumes:
       - /root/monoforge/storage:/app/storage
+      - /root/monoforge/.next:/app/.next:ro
+      - /root/monoforge/server:/app/server:ro
+      - /root/monoforge/lib:/app/lib:ro
+      - /root/monoforge/components:/app/components:ro
+      - /root/monoforge/app:/app/app:ro
+      - /root/monoforge/generated:/app/generated:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,6 +70,33 @@ services:
       start_period: 30s
     mem_limit: 768m
 
+  mirror-worker:
+    image: node:24-bookworm-slim
+    container_name: monoforge-mirror-worker
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monoforge}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monoforge}?schema=public
+      STORAGE_PATH: /app/storage
+      AUTH_URL: https://monoforge.org
+      AUTH_TRUST_HOST: "true"
+      TRUST_PROXY_HEADERS: "true"
+      NEXTAUTH_URL: https://monoforge.org
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - .:/app
+      - /root/monoforge/storage:/app/storage
+      - monoforge_mirror_node_modules:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -lc "apt-get update && apt-get install -y --no-install-recommends zstd ca-certificates openssl && npm ci --include=dev && npx prisma generate && npm run mirror:worker"
+    mem_limit: 512m
+
 volumes:
   monoforge_postgres_data:
   monoforge_migrate_node_modules:
+  monoforge_mirror_node_modules:

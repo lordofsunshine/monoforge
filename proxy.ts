@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getClientIpFromHeaders } from "@/lib/security/client-ip";
 import { hasApiCredential, isSameOriginRequest } from "@/lib/security/origin";
+import { enforceGlobalRateLimit } from "@/lib/security/rate-limit";
 
 function createNonce() {
   return btoa(crypto.randomUUID());
@@ -42,6 +44,28 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  if (process.env.NODE_ENV === "production") {
+    const clientIp = getClientIpFromHeaders(request.headers);
+    const limit = clientIp === "unknown" ? { allowed: true, retryAfterSeconds: 0 } : enforceGlobalRateLimit(clientIp);
+
+    if (!limit.allowed) {
+      const isApi = pathname.startsWith("/api/");
+      const body = isApi ? JSON.stringify({ error: "Too many requests" }) : "Too many requests";
+      const blocked = withSecurityHeaders(
+        new NextResponse(body, {
+          status: 429,
+          headers: {
+            "Content-Type": isApi ? "application/json" : "text/plain; charset=utf-8",
+            "Retry-After": String(limit.retryAfterSeconds),
+            "Cache-Control": "no-store",
+          },
+        }),
+        nonce,
+      );
+      return blocked;
+    }
+  }
 
   if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth/") && !isSameOriginRequest(request) && !hasApiCredential(request)) {
     return withSecurityHeaders(NextResponse.json({ error: "Cross-origin request blocked" }, { status: 403 }), nonce);

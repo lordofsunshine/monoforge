@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveRepositoryLanguage } from "@/lib/repository/languages";
 import { calculateRepositoryLanguages } from "@/server/repositories/languages";
 
 describe("repository language stats", () => {
@@ -14,5 +15,16 @@ describe("repository language stats", () => {
     expect(languages.map((item) => item.language)).toEqual(["TypeScript", "CSS", "Markdown"]);
     expect(languages[0].percent).toBeGreaterThan(60);
     expect(languages.reduce((sum, item) => sum + item.percent, 0)).toBe(100);
+  });
+
+  it("resolves ruby from nested paths", () => {
+    const languages = calculateRepositoryLanguages([
+      { language: resolveRepositoryLanguage("lib/tasks/foo.rake", "rake", null), size: 200n },
+      { language: resolveRepositoryLanguage("app/models/user.rb", "rb", null), size: 800n },
+      { language: null, size: 999n },
+    ]);
+
+    expect(languages.map((item) => item.language)).toEqual(["Ruby"]);
+    expect(languages[0].percent).toBe(100);
   });
 });

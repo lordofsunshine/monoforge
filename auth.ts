@@ -7,6 +7,7 @@ import { getPrisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation/auth";
 import { verifyPassword } from "@/lib/auth/password";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIpFromHeaders } from "@/lib/security/client-ip";
 import { writeAuditLog } from "@/lib/security/audit-log";
 
 function normalizeOAuthUsername(input: string, fallback: string) {
@@ -34,9 +35,7 @@ function providers() {
           return null;
         }
 
-        const forwarded = request.headers.get("x-forwarded-for");
-        const realIp = request.headers.get("x-real-ip");
-        const ip = forwarded?.split(",")[0]?.trim() || realIp || "unknown";
+        const ip = getClientIpFromHeaders(request.headers);
         const limited = checkRateLimit(`login:${ip}:${parsed.data.email}`, 5, 60_000);
 
         if (!limited.allowed) {
@@ -97,7 +96,6 @@ function providers() {
     items.unshift(
       Google({
         checks: ["state"],
-        allowDangerousEmailAccountLinking: true,
         profile(profile) {
           const email = typeof profile.email === "string" ? profile.email.toLowerCase() : null;
           const id = String(profile.sub);
