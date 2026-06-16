@@ -23,6 +23,14 @@ const envSchema = z.object({
   TRANSLATE_API_URL: z.string().url().default("https://libretranslate.com/translate"),
   TRANSLATE_TIMEOUT_MS: z.coerce.number().int().positive().default(12_000),
   TRANSLATE_MAX_CHARS: z.coerce.number().int().positive().default(12_000),
+  GITHUB_TOKEN: z.string().default(""),
+  GITHUB_API_USER_AGENT: z.string().default("MonoForge-Mirror"),
+  MIRROR_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
+  MIRROR_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(20),
+  MIRROR_MAX_REPO_MB: z.coerce.number().int().positive().default(200),
+  MIRROR_MAX_FILE_MB: z.coerce.number().int().positive().default(10),
+  MIRROR_MAX_FILES: z.coerce.number().int().positive().default(500),
+  MIRROR_MIN_RATE_BUDGET: z.coerce.number().int().min(1).default(2),
 });
 
 export function getEnv() {

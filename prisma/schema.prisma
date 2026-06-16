@@ -101,6 +101,12 @@ enum AuditAction {
   QUOTA_EXCEEDED
 }
 
+enum MirrorStatus {
+  IMPORTED
+  SKIPPED
+  FAILED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -110,6 +116,7 @@ model User {
   image         String?
   bio           String?
   passwordHash  String?
+  mirroredFrom  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastActiveAt  DateTime?
@@ -183,6 +190,7 @@ model Repository {
   defaultBranch String               @default("main")
   gitEnabled    Boolean              @default(false)
   gitPath       String?
+  mirrorSourceUrl String?
   readmePath    String?
   repoSize      BigInt               @default(0)
   fileCount     Int                  @default(0)
@@ -552,5 +560,40 @@ model AuditLog {
   @@index([actorId])
   @@index([repositoryId])
   @@index([action])
+  @@index([createdAt])
+}
+
+model MirrorSettings {
+  id             String   @id @default("default")
+  enabled        Boolean  @default(false)
+  cursor         BigInt   @default(0)
+  importedCount  Int      @default(0)
+  skippedCount   Int      @default(0)
+  failedCount    Int      @default(0)
+  lastRunAt      DateTime?
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model MirroredRepository {
+  id                    String       @id @default(cuid())
+  githubId              BigInt       @unique
+  fullName              String
+  ownerLogin            String
+  repoName              String
+  license               String?
+  status                MirrorStatus
+  reason                String?
+  monoforgeUserId       String?
+  monoforgeRepositoryId String?
+  fileCount             Int          @default(0)
+  byteSize              BigInt       @default(0)
+  attemptCount          Int          @default(0)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@index([status])
+  @@index([ownerLogin])
   @@index([createdAt])
 }

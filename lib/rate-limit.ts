@@ -51,15 +51,10 @@ export function cleanupExpiredRateLimits(now = Date.now(), force = false) {
 
   if (buckets.size > maxBuckets) {
     const overflow = buckets.size - maxBuckets;
-    let removed = 0;
+    const sortedByExpiry = [...buckets.entries()].sort((left, right) => left[1].resetAt - right[1].resetAt);
 
-    for (const key of buckets.keys()) {
-      buckets.delete(key);
-      removed += 1;
-
-      if (removed >= overflow) {
-        break;
-      }
+    for (let index = 0; index < overflow && index < sortedByExpiry.length; index += 1) {
+      buckets.delete(sortedByExpiry[index][0]);
     }
   }
 
