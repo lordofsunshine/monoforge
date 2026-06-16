@@ -1,5 +1,7 @@
 # MonoForge
 
+***The files on GitHub are NOT ALL uploaded, download the archive. The archive is located in the repository itself.***
+
 Minimal monochrome GitHub-like forge for repositories, files, README covers, issues, stars, activity and storage discipline.
 
 MonoForge is built for small servers. It stores file metadata in PostgreSQL, stores file bytes on disk under `/storage`, deduplicates blobs by SHA-256, compresses text with zstd, and creates optimized image previews with sharp.
