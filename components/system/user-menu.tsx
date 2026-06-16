@@ -50,13 +50,13 @@ export function UserMenu({ username, isAdmin = false }: UserMenuProps) {
         <span className="font-mono text-xs text-faint">{locale.toUpperCase()}</span>
       </button>
       {open ? (
-        <div className="absolute right-0 top-11 z-50 w-64 rounded-lg border border-line bg-surface p-2 shadow-xl" role="menu">
-          <div className="border-b border-line px-2 py-2">
+        <div className="mf-menu-panel z-50 w-64" role="menu">
+          <div className="border-b border-line px-3 py-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">{t("nav.view")}</p>
           </div>
           <button
             type="button"
-            className="mt-2 flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-subtle"
+            className="mf-menu-item mf-menu-item--split"
             onClick={() => {
               toggleTheme();
               setOpen(false);
@@ -68,7 +68,7 @@ export function UserMenu({ username, isAdmin = false }: UserMenuProps) {
           </button>
           <button
             type="button"
-            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm hover:bg-subtle"
+            className="mf-menu-item mf-menu-item--split"
             onClick={() => {
               setLocale(nextLocale);
               setOpen(false);
@@ -78,28 +78,28 @@ export function UserMenu({ username, isAdmin = false }: UserMenuProps) {
             <span>{t("nav.language")}</span>
             <span className="font-mono text-xs uppercase text-faint">{t(`nav.${nextLocale}`)}</span>
           </button>
-          <div className="my-2 border-t border-line" />
-          <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/docs" onClick={() => setOpen(false)} role="menuitem">
+          <div className="my-1 border-t border-line" />
+          <Link className="mf-menu-item" href="/docs" onClick={() => setOpen(false)} role="menuitem">
             {t("nav.docs")}
           </Link>
-          <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/rules" onClick={() => setOpen(false)} role="menuitem">
+          <Link className="mf-menu-item" href="/rules" onClick={() => setOpen(false)} role="menuitem">
             {t("nav.rules")}
           </Link>
           {username ? (
             <>
-              <div className="my-2 border-t border-line" />
-              <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle sm:hidden" href="/dashboard" onClick={() => setOpen(false)} role="menuitem">
+              <div className="my-1 border-t border-line" />
+              <Link className="mf-menu-item sm:hidden" href="/dashboard" onClick={() => setOpen(false)} role="menuitem">
                 {t("nav.dashboard")}
               </Link>
-              <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle sm:hidden" href={`/u/${username}`} onClick={() => setOpen(false)} role="menuitem">
+              <Link className="mf-menu-item sm:hidden" href={`/u/${username}`} onClick={() => setOpen(false)} role="menuitem">
                 {t("nav.profile")}
               </Link>
               {isAdmin ? (
-                <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/admin" onClick={() => setOpen(false)} role="menuitem">
+                <Link className="mf-menu-item" href="/admin" onClick={() => setOpen(false)} role="menuitem">
                   Admin
                 </Link>
               ) : null}
-              <Link className="block rounded-md px-3 py-2 text-sm hover:bg-subtle" href="/settings/profile" onClick={() => setOpen(false)} role="menuitem">
+              <Link className="mf-menu-item" href="/settings/profile" onClick={() => setOpen(false)} role="menuitem">
                 {t("nav.settings")}
               </Link>
             </>

@@ -6,7 +6,7 @@ type LanguageStripProps = {
   compact?: boolean;
 };
 
-const shades = ["bg-foreground", "bg-secondary", "bg-faint", "bg-lineStrong", "bg-line", "bg-muted"];
+const shades = ["bg-foreground", "bg-secondary", "bg-faint", "bg-lineStrong", "bg-line", "bg-muted", "bg-foreground/70", "bg-secondary/70"];
 
 export function LanguageStrip({ languages, compact = false }: LanguageStripProps) {
   if (!languages.length) {

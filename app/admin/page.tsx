@@ -6,7 +6,9 @@ import { isAdminEmail } from "@/lib/admin";
 import { formatBytes } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { getStorageRoot } from "@/server/storage/paths";
+import { getMirrorSettings } from "@/server/mirror/settings";
 import { LocalizedText } from "@/components/system/localized-text";
+import { MirrorControl } from "@/components/admin/mirror-control";
 
 async function directorySize(dir: string): Promise<bigint> {
   const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
@@ -57,6 +59,7 @@ export default async function AdminPage() {
       },
     }),
   ]);
+  const mirrorSettings = await getMirrorSettings();
 
   const cards = [
     ["admin.users", users.toString()],
@@ -87,6 +90,16 @@ export default async function AdminPage() {
           </section>
         ))}
       </div>
+
+      <MirrorControl
+        enabled={mirrorSettings.enabled}
+        imported={mirrorSettings.importedCount}
+        skipped={mirrorSettings.skippedCount}
+        failed={mirrorSettings.failedCount}
+        cursor={mirrorSettings.cursor.toString()}
+        lastRunAt={mirrorSettings.lastRunAt ? mirrorSettings.lastRunAt.toISOString() : null}
+        lastError={mirrorSettings.lastError}
+      />
 
       <section className="overflow-hidden rounded-lg border border-line bg-surface">
         <div className="border-b border-line bg-subtle px-4 py-3">

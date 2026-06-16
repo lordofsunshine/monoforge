@@ -109,8 +109,8 @@ export async function CodeViewer({ code, language, path, rawHref = "#", download
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-surface">
-      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-line bg-subtle px-3">
-        <p className="min-w-0 truncate font-mono text-xs text-secondary">{path}</p>
+      <div className="flex min-h-11 items-center justify-between gap-2 border-b border-line bg-subtle px-3">
+        <p className="min-w-0 flex-1 truncate font-mono text-xs text-secondary">{path}</p>
         <RawFileActions path={path} rawHref={rawHref} downloadHref={downloadHref} code={code} />
       </div>
       <div className="max-h-[calc(100dvh-220px)] overflow-auto text-[13px] leading-6">{hastToReact(highlighted as HastNode)}</div>

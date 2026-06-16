@@ -2,12 +2,17 @@
 
 import { useI18n } from "@/components/system/preferences-provider";
 
+type LanguageChoice = {
+  value: string;
+  label: string;
+};
+
 type ExploreFiltersProps = {
   query: string;
   sort: string;
   language: string;
   hasReadme: boolean;
-  languages: string[];
+  languages: LanguageChoice[];
 };
 
 export function ExploreFilters({ query, sort, language, hasReadme, languages }: ExploreFiltersProps) {
@@ -27,8 +32,8 @@ export function ExploreFilters({ query, sort, language, hasReadme, languages }: 
       <select className="h-11 rounded-md border border-line bg-background px-3 text-sm outline-none focus:border-foreground" defaultValue={language} name="language">
         <option value="">{t("explore.allLanguages")}</option>
         {languages.map((item) => (
-          <option key={item} value={item}>
-            {item}
+          <option key={item.value} value={item.value}>
+            {item.label}
           </option>
         ))}
       </select>

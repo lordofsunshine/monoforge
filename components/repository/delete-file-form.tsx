@@ -39,7 +39,7 @@ export function DeleteFileForm({ repositoryId, path, redirectTo, compact = false
       <button
         className={
           compact
-            ? "w-full rounded-md px-3 py-2 text-left text-sm hover:bg-subtle disabled:opacity-40"
+            ? "mf-menu-item"
             : "inline-flex h-9 items-center rounded-md border border-line bg-surface px-3 text-sm hover:border-lineStrong hover:bg-subtle disabled:opacity-40"
         }
         disabled={pending}

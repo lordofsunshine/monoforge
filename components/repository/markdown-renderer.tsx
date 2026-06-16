@@ -339,8 +339,14 @@ export function MarkdownRenderer({ content, empty = "", owner, repo, sourcePath,
 
             return <img alt={alt || ""} className="my-4 h-auto w-auto max-h-[460px] max-w-full rounded-md border border-line object-contain" loading="lazy" src={resolvedSrc} />;
           },
-          code: ({ children }) => <code className="rounded-sm border border-line bg-subtle px-1 py-0.5 font-mono text-xs text-foreground">{children}</code>,
-          pre: ({ children }) => <pre className="mb-4 overflow-x-auto whitespace-pre rounded-md border border-line bg-subtle p-3 font-mono text-xs text-foreground">{children}</pre>,
+          code: ({ className, children }) => {
+            if (className) {
+              return <code className={className}>{children}</code>;
+            }
+
+            return <code className="mf-inline-code">{children}</code>;
+          },
+          pre: ({ children }) => <pre className="mf-code-block">{children}</pre>,
           blockquote: ({ children }) => {
             const alert = alertInfo(children);
 

@@ -22,11 +22,19 @@ export function FileTree({ owner, repo, files }: FileTreeProps) {
 
   return (
     <div className="min-w-0 overflow-hidden rounded-lg border border-line bg-surface">
-      <div className="flex h-10 items-center justify-between border-b border-line bg-subtle px-3 font-mono text-xs text-secondary">
-        <span>
+      <div className="flex h-10 items-center justify-between gap-3 border-b border-line bg-subtle px-3 font-mono text-xs text-secondary">
+        <span className="flex items-center gap-2">
           <LocalizedText path="repo.files" />
+          <span className="text-faint">{sortedFiles.length}</span>
         </span>
-        <span>{sortedFiles.length}</span>
+        {sortedFiles.length ? (
+          <a
+            className="inline-flex h-7 items-center rounded-md border border-line bg-surface px-2.5 text-xs text-foreground hover:border-lineStrong hover:bg-subtle"
+            href={`/api/repositories/${owner}/${repo}/archive`}
+          >
+            <LocalizedText path="repo.download" />
+          </a>
+        ) : null}
       </div>
       {sortedFiles.length ? (
         sortedFiles.map((file) => {
